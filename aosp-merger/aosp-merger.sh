@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 # Copyright (C) 2017 The LineageOS Project
+# Copyright (C) 2022 The LeafOS Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,18 +46,22 @@ fi
 
 TOP="${ANDROID_BUILD_TOP}"
 MERGEDREPOS="${TOP}/merged_repos.txt"
-MANIFEST="${TOP}/.repo/manifests/default.xml"
+MANIFEST="${TOP}/.repo/manifests/snippets/leaf.xml"
 BRANCH=$(git -C ${TOP}/.repo/manifests.git config --get branch.default.merge | sed 's#refs/heads/##g')
 STAGINGBRANCH="staging/${BRANCH}_${OPERATION}-${NEWTAG}"
 
-# Build list of LineageOS forked repos
-PROJECTPATHS=$(grep "name=\"LineageOS/" "${MANIFEST}" | sed -n 's/.*path="\([^"]\+\)".*/\1/p')
+# Build list of LeafOS forked repos
+PROJECTPATHS=$(grep "<remove-project" "${MANIFEST}" | sed -n 's/.*name="\([^"]\+\)".*/\1/p' | sed 's/^platform\///g')
+# Moved to build/make in Oreo
+PROJECTPATHS=$(echo $PROJECTPATHS | sed 's/ build / build\/make /g')
 
 echo "#### Old tag = ${OLDTAG} Branch = ${BRANCH} Staging branch = ${STAGINGBRANCH} ####"
 
 # Make sure manifest and forked repos are in a consistent state
-echo "#### Verifying there are no uncommitted changes on LineageOS forked AOSP projects ####"
+echo "#### Verifying there are no uncommitted changes on LeafOS forked AOSP projects ####"
 for PROJECTPATH in ${PROJECTPATHS} .repo/manifests; do
+    # Skip fully removed projects
+    [ ! -d "${TOP}/$PROJECTPATH" ] && continue;
     cd "${TOP}/${PROJECTPATH}"
     if [[ -n "$(git status --porcelain)" ]]; then
         echo "Path ${PROJECTPATH} has uncommitted changes. Please fix."
@@ -68,16 +73,11 @@ echo "#### Verification complete - no uncommitted changes found ####"
 # Remove any existing list of merged repos file
 rm -f "${MERGEDREPOS}"
 
-# Sync and detach from current branches
-repo sync -d
-
-# Ditch any existing staging branches (across all projects)
-repo abandon "${STAGINGBRANCH}"
-
 # Iterate over each forked project
 for PROJECTPATH in ${PROJECTPATHS}; do
+    # Skip fully removed projects
+    [ ! -d "${TOP}/$PROJECTPATH" ] && continue;
     cd "${TOP}/${PROJECTPATH}"
-    repo start "${STAGINGBRANCH}" .
     aospremote | grep -v "Remote 'aosp' created"
     git fetch -q --tags aosp "${NEWTAG}"
 
@@ -95,16 +95,6 @@ for PROJECTPATH in ${PROJECTPATHS}; do
     if [[ -z "$(git diff ${OLDTAG} ${NEWTAG})" ]]; then
         echo -e "nochange\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
         continue
-    fi
-
-    # Determine whether OLDTAG is an ancestor of NEWTAG
-    # ie is history consistent.
-    git merge-base --is-ancestor "${OLDTAG}" "${NEWTAG}"
-    # If no, force rebase.
-    if [[ "$?" -eq 1 ]]; then
-        echo -n "#### Project ${PROJECTPATH} old tag ${OLD} is not an ancestor "
-        echo    "of new tag ${NEWTAG}, forcing rebase ####"
-        PROJECTOPERATION="rebase"
     fi
 
     if [[ "${PROJECTOPERATION}" == "merge" ]]; then
