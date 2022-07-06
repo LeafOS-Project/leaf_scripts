@@ -99,7 +99,7 @@ for PROJECTPATH in ${PROJECTPATHS}; do
 
     if [[ "${PROJECTOPERATION}" == "merge" ]]; then
         echo "#### Merging ${NEWTAG} into ${PROJECTPATH} ####"
-        git merge --no-edit --log "${NEWTAG}" --into-name "$(repo info . | grep 'Manifest revision' | cut -f3 -d '/')"
+        git merge --log "${NEWTAG}" --into-name "$(repo info . | grep 'Manifest revision' | cut -f3 -d '/')"
     elif [[ "${PROJECTOPERATION}" == "rebase" ]]; then
         echo "#### Rebasing ${PROJECTPATH} onto ${NEWTAG} ####"
         git rebase --onto "${NEWTAG}" "${OLDTAG}"
