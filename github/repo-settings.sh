@@ -7,7 +7,7 @@ fi
 
 LEAF_VERSION=$(cat .repo/manifests/snippets/leaf.xml  | grep -i '<default revision' | cut -f2 -d '"' | cut -f3 -d '/')
 
-for REPO in $(cat .repo/manifests/snippets/leaf.xml | grep -E 'LeafOS-Project|LeafOS-Blobs' | cut -f4 -d '"'); do
+for REPO in $(cat .repo/manifests/snippets/leaf.xml | grep -E 'LeafOS-Project|LeafOS-Blobs|LeafOS-Devices' | cut -f4 -d '"'); do
 	echo $REPO
 	curl -X POST \
 	-H "Accept: application/vnd.github+json" \
