@@ -44,7 +44,7 @@ fi
 # Source build environment (needed for aospremote)
 . build/envsetup.sh
 
-TOP="${ANDROID_BUILD_TOP}"
+TOP="$(gettop)"
 MERGEDREPOS="${TOP}/merged_repos.txt"
 MANIFEST="${TOP}/.repo/manifests/snippets/leaf.xml"
 BRANCH=$(git -C ${TOP}/.repo/manifests.git config --get branch.default.merge | sed 's#refs/heads/##g')
