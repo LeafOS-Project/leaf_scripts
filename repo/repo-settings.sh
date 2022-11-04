@@ -11,7 +11,8 @@ GERRIT_PROJECTS=$(ssh -n -p "$PORT" "$GERRIT" gerrit ls-projects)
 
 LEAF_VERSION=$(grep -i '<default revision' .repo/manifests/snippets/leaf.xml | cut -f2 -d '"' | cut -f3 -d '/')
 
-grep -E 'LeafOS-Project|LeafOS-Blobs|LeafOS-Devices' .repo/manifests/snippets/leaf.xml | cut -f4 -d '"' | while IFS= read -r PROJECT; do
+grep -E 'LeafOS-Project|LeafOS-Blobs|LeafOS-Devices' .repo/manifests/snippets/leaf.xml | while IFS= read -r project; do
+	PROJECT=$(cut -f4 -d '"' <<<"$project")
 	ORG=$(echo "$PROJECT" | cut -f1 -d '/')
 	REPO=$(echo "$PROJECT" | cut -f2 -d '/')
 
@@ -44,5 +45,9 @@ grep -E 'LeafOS-Project|LeafOS-Blobs|LeafOS-Devices' .repo/manifests/snippets/le
 	# Gerrit
 	if ! [[ $GERRIT_PROJECTS =~ $PROJECT ]]; then
 		ssh -n -p "$PORT" "$GERRIT" gerrit create-project "$PROJECT" -b "$LEAF_VERSION"
+	fi
+
+	if ! [[ $project =~ revision ]]; then
+		ssh -n -p "$PORT" "$GERRIT" gerrit set-head "$PROJECT" --new-head "$LEAF_VERSION"
 	fi
 done
