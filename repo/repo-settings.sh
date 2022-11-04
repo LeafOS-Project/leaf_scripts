@@ -47,4 +47,5 @@ grep -E 'LeafOS-Project|LeafOS-Blobs|LeafOS-Devices' .repo/manifests/snippets/le
 	if ! [[ "$GERRIT_PROJECTS" =~ $PROJECT ]]; then
 		ssh -p "$PORT" "$GERRIT" gerrit create-project "$PROJECT" -b "$LEAF_VERSION"
 	fi
+	ssh -p "$PORT" "$GERRIT" gerrit set-head "$PROJECT" --new-head "$LEAF_VERSION"
 done
