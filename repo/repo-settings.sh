@@ -5,9 +5,13 @@ if [ -z "$GH_TOKEN" ]; then
 	exit 1
 fi
 
+GH_USER=$(curl -s -H "Accept: application/vnd.github+json" \
+	-H "Authorization: Bearer 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" \
+	https://api.github.com/user | jq -r '.login')
+
 PORT="29418"
 GERRIT="review.leafos.org"
-GERRIT_PROJECTS=$(ssh -n -p "$PORT" "$GERRIT" gerrit ls-projects)
+GERRIT_PROJECTS=$(ssh -n -p "$PORT" "$GH_USER@$GERRIT" gerrit ls-projects)
 
 LEAF_VERSION=$(grep -i '<default revision' .repo/manifests/snippets/leaf.xml | cut -f2 -d '"' | cut -f3 -d '/')
 
@@ -44,10 +48,10 @@ grep -E 'LeafOS-Project|LeafOS-Blobs|LeafOS-Devices' .repo/manifests/snippets/le
 
 	# Gerrit
 	if ! [[ $GERRIT_PROJECTS =~ $PROJECT ]]; then
-		ssh -n -p "$PORT" "$GERRIT" gerrit create-project "$PROJECT" -b "$LEAF_VERSION"
+		ssh -n -p "$PORT" "$GH_USER@$GERRIT" gerrit create-project "$PROJECT" -b "$LEAF_VERSION"
 	fi
 
 	if ! [[ $project =~ revision ]]; then
-		ssh -n -p "$PORT" "$GERRIT" gerrit set-head "$PROJECT" --new-head "$LEAF_VERSION"
+		ssh -n -p "$PORT" "$GH_USER@$GERRIT" gerrit set-head "$PROJECT" --new-head "$LEAF_VERSION"
 	fi
 done
