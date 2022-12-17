@@ -1,0 +1,38 @@
+From 0c85c458895eee4690198bb58d735d46ead0f5bc Mon Sep 17 00:00:00 2001
+From: Daniel Micay <danielmicay@gmail.com>
+Date: Thu, 8 Mar 2018 22:43:12 -0500
+Subject: [PATCH] disable article suggestions feature by default
+
+---
+ components/feed/core/shared_prefs/pref_names.cc | 4 ++--
+ components/ntp_snippets/features.cc             | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/components/feed/core/shared_prefs/pref_names.cc b/components/feed/core/shared_prefs/pref_names.cc
+index e239b42b31ef3..5a5e881272c22 100644
+--- a/components/feed/core/shared_prefs/pref_names.cc
++++ b/components/feed/core/shared_prefs/pref_names.cc
+@@ -20,8 +20,8 @@ const char kArticlesListVisible[] = "ntp_snippets.list_visible";
+ const char kVideoPreviewsType[] = "ntp_snippets.video_previews_type";
+ 
+ void RegisterFeedSharedProfilePrefs(PrefRegistrySimple* registry) {
+-  registry->RegisterBooleanPref(kEnableSnippets, true);
+-  registry->RegisterBooleanPref(kArticlesListVisible, true);
++  registry->RegisterBooleanPref(kEnableSnippets, false);
++  registry->RegisterBooleanPref(kArticlesListVisible, false);
+   registry->RegisterIntegerPref(kVideoPreviewsType, 1);
+ }
+ 
+diff --git a/components/ntp_snippets/features.cc b/components/ntp_snippets/features.cc
+index 7d146cd35fd4c..7bc431d6bcacb 100644
+--- a/components/ntp_snippets/features.cc
++++ b/components/ntp_snippets/features.cc
+@@ -40,7 +40,7 @@ const base::Feature* const kAllFeatures[] = {
+ 
+ BASE_FEATURE(kArticleSuggestionsFeature,
+              "NTPArticleSuggestions",
+-             base::FEATURE_ENABLED_BY_DEFAULT);
++             base::FEATURE_DISABLED_BY_DEFAULT);
+ 
+ BASE_FEATURE(kRemoteSuggestionsEmulateM58FetchingSchedule,
+              "RemoteSuggestionsEmulateM58FetchingSchedule",
