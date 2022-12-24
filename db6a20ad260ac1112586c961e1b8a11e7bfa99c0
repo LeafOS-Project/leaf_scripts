@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b3c3e488_2ec47abb",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-12-24T15:02:01Z",
+      "side": 1,
+      "message": "Some stuff we picked to Settings is handled in LineageParts upstream, the script does not take care of that case yet",
+      "revId": "db6a20ad260ac1112586c961e1b8a11e7bfa99c0",
+      "serverId": "b49086b3-c06c-47ea-b69e-65c8379e1be6"
+    }
+  ]
+}
