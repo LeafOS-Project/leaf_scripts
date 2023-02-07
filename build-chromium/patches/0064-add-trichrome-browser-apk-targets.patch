@@ -1,37 +1,28 @@
-From 2f2f6a0b0663bec5ae7acd722338d2544b1c7457 Mon Sep 17 00:00:00 2001
+From 945374555c5f26e4a22f6d304fed73ddc3774201 Mon Sep 17 00:00:00 2001
 From: Daniel Micay <danielmicay@gmail.com>
 Date: Thu, 27 May 2021 07:30:02 -0400
 Subject: [PATCH] add trichrome browser apk targets
 
 ---
- chrome/android/BUILD.gn | 61 ++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 60 insertions(+), 1 deletion(-)
+ chrome/android/BUILD.gn | 41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
 
 diff --git a/chrome/android/BUILD.gn b/chrome/android/BUILD.gn
-index 7934ab9348808..17af636d2d7ab 100644
+index 64e1be0d0514f..bf94b55cd44cb 100644
 --- a/chrome/android/BUILD.gn
 +++ b/chrome/android/BUILD.gn
-@@ -2359,6 +2359,10 @@ if (current_toolchain == default_toolchain) {
-     is_monochrome = true
+@@ -2366,6 +2366,10 @@ if (current_toolchain == default_toolchain) {
+     is_trichrome = true
      is_bundle_module = true
    }
 +  resource_packaging("trichrome_chrome_apk_pak_assets") {
 +    is_monochrome = false
 +    is_trichrome = true
 +  }
-   resource_packaging("trichrome_chrome_bundle_module_pak_assets") {
-     is_monochrome = false
-     is_trichrome = true
-@@ -2899,7 +2903,7 @@ if (current_toolchain == default_toolchain) {
  
-       if (trichrome_synchronized_proguard) {
-         webview_target = "//android_webview:trichrome_webview_apk"
--        chrome_target = ":trichrome_chrome_bundle"
-+        chrome_target = ":trichrome_chrome_apk"
-       }
- 
-       if (_enable_manifest_verification) {
-@@ -2954,6 +2958,61 @@ if (current_toolchain == default_toolchain) {
+   # Java libraries that go into each public chrome APK and base module. The chrome
+   # JNI registration is generated based on this target.
+@@ -2953,6 +2957,43 @@ if (current_toolchain == default_toolchain) {
        }
      }
    }
@@ -43,12 +34,6 @@ index 7934ab9348808..17af636d2d7ab 100644
 +  target_type = "android_apk"
 +  use_trichrome_library = true
 +  static_library_provider = ":trichrome_library_apk"
-+  if (!is_java_debug) {
-+    static_library_synchronized_proguard = trichrome_synchronized_proguard
-+    if (trichrome_synchronized_proguard) {
-+      resource_ids_provider_dep = "//android_webview:trichrome_webview_apk"
-+    }
-+  }
 +  if (android_64bit_target_cpu) {
 +    is_64_bit_browser = false
 +    include_64_bit_webview = true
@@ -63,12 +48,6 @@ index 7934ab9348808..17af636d2d7ab 100644
 +    target_type = "android_apk"
 +    use_trichrome_library = true
 +    static_library_provider = ":trichrome_library_64_32_apk"
-+    if (!is_java_debug) {
-+      static_library_synchronized_proguard = trichrome_synchronized_proguard
-+      if (trichrome_synchronized_proguard) {
-+        resource_ids_provider_dep = "//android_webview:trichrome_webview_apk"
-+      }
-+    }
 +    is_64_bit_browser = true
 +    include_32_bit_webview = true
 +  }
@@ -80,12 +59,6 @@ index 7934ab9348808..17af636d2d7ab 100644
 +    target_type = "android_apk"
 +    use_trichrome_library = true
 +    static_library_provider = ":trichrome_library_64_apk"
-+    if (!is_java_debug) {
-+      static_library_synchronized_proguard = trichrome_synchronized_proguard
-+      if (trichrome_synchronized_proguard) {
-+        resource_ids_provider_dep = "//android_webview:trichrome_webview_apk"
-+      }
-+    }
 +    is_64_bit_browser = true
 +    include_32_bit_webview = false
 +  }
