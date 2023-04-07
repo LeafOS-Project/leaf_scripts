@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2022 The LeafOS Project
+# Copyright (C) 2022-2023 The LeafOS Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -64,11 +64,24 @@ rm -f "${MERGEDREPOS}"
 
 # Iterate over each forked project
 for PROJECTPATH in ${PROJECTPATHS}; do
-    # Skip fully removed projects
-    [ ! -d "${TOP}/$PROJECTPATH" ] && continue;
+    REPO=android_$(echo $PROJECTPATH | sed 's|/|_|g')
+    REPOBRANCH="${BRANCH}"
+    LOCAL_BRANCH="${LEAF_BRANCH}"
+
+    # Override repo name / branch for qcom projects
+    REPO_OVERRIDE=$(grep -Pio "<project path=\"${PROJECTPATH}\".*name=\"LeafOS-Project/\K[^\"]*" "${MANIFEST}")
+    BRANCH_OVERRIDE=$(grep -Pio "<project path=\"${PROJECTPATH}\".*revision=\"\K[^\"]*" "${MANIFEST}")
+    [ ! -z "${REPO_OVERRIDE}" ] && REPO="${REPO_OVERRIDE}"
+    if [ ! -z "${BRANCH_OVERRIDE}" ]; then
+        # Branch override is expected to start with default branch as prefix
+        # e.g. leaf-2.0-legacy-um
+        REPOBRANCH=$(echo "${BRANCH_OVERRIDE}" | sed "s|^${LEAF_BRANCH}|${BRANCH}|g")
+        LOCAL_BRANCH="${BRANCH_OVERRIDE}"
+    fi
+
     cd "${TOP}/${PROJECTPATH}"
-    echo "### Merging ${BRANCH} into ${PROJECTPATH} ###"
-    git fetch https://github.com/LineageOS/android_$(echo $PROJECTPATH | sed 's|/|_|g') "${BRANCH}"
+    echo "### Merging ${REPOBRANCH} into ${PROJECTPATH} ###"
+    git fetch https://github.com/LineageOS/"${REPO}" "${REPOBRANCH}"
 
     # Was there any change upstream? Skip if not.
     if [[ -z "$(git log --oneline HEAD..FETCH_HEAD)" ]]; then
@@ -76,7 +89,7 @@ for PROJECTPATH in ${PROJECTPATHS}; do
         continue
     fi
 
-    git merge FETCH_HEAD --into-name "$LEAF_BRANCH"
+    git merge FETCH_HEAD --into-name "${LOCAL_BRANCH}"
 
     CONFLICT=""
     if [[ -n "$(git status --porcelain)" ]]; then
