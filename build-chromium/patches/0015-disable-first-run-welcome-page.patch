@@ -1,4 +1,4 @@
-From ab6d8cab9e387b11c102f874ad0e9800bff11196 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: csagan5 <32685696+csagan5@users.noreply.github.com>
 Date: Sun, 26 Nov 2017 22:51:43 +0100
 Subject: [PATCH] disable first run welcome page
@@ -9,10 +9,10 @@ Subject: [PATCH] disable first run welcome page
  2 files changed, 5 insertions(+), 4 deletions(-)
 
 diff --git a/chrome/android/java/src/org/chromium/chrome/browser/firstrun/FirstRunUtils.java b/chrome/android/java/src/org/chromium/chrome/browser/firstrun/FirstRunUtils.java
-index 8e32e791835ad..8c4063623324b 100644
+index 1ed0ad476b512..fb390474ccaf0 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/firstrun/FirstRunUtils.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/firstrun/FirstRunUtils.java
-@@ -43,15 +43,12 @@ public class FirstRunUtils {
+@@ -44,15 +44,12 @@ public class FirstRunUtils {
          boolean javaPrefValue =
                  javaPrefs.readBoolean(ChromePreferenceKeys.FIRST_RUN_CACHED_TOS_ACCEPTED, false);
          boolean nativePrefValue = isFirstRunEulaAccepted();

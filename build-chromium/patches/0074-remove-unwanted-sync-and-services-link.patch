@@ -1,4 +1,4 @@
-From 47c466ba2e1e4b2a4e1feaf28fe09c038dc25797 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Daniel Micay <danielmicay@gmail.com>
 Date: Sat, 7 Aug 2021 15:01:54 -0400
 Subject: [PATCH] remove unwanted sync and services link
@@ -8,10 +8,10 @@ Subject: [PATCH] remove unwanted sync and services link
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettings.java b/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettings.java
-index 79c75cba0cdfb..06c0b8ba3c941 100644
+index 26218b5511044..fe8df089a3c76 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettings.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettings.java
-@@ -151,8 +151,7 @@ public class PrivacySettings
+@@ -176,8 +176,7 @@ public class PrivacySettings extends PreferenceFragmentCompat
          Preference secureDnsPref = findPreference(PREF_SECURE_DNS);
          secureDnsPref.setVisible(SecureDnsSettings.isUiEnabled());
  
