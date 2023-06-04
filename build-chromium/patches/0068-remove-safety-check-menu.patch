@@ -1,22 +1,22 @@
-From 4cc93048a5b325e7076de379bf8027e3890be240 Mon Sep 17 00:00:00 2001
-From: fgei <fgei@gmail.com>
-Date: Fri, 20 Aug 2021 16:13:42 +0000
-Subject: [PATCH] remove unwanted account and services section
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Micay <danielmicay@gmail.com>
+Date: Tue, 25 May 2021 16:43:39 -0400
+Subject: [PATCH] remove safety check menu
 
 ---
  .../src/org/chromium/chrome/browser/settings/MainSettings.java  | 2 ++
  1 file changed, 2 insertions(+)
 
 diff --git a/chrome/android/java/src/org/chromium/chrome/browser/settings/MainSettings.java b/chrome/android/java/src/org/chromium/chrome/browser/settings/MainSettings.java
-index bd097737d5a34..cd202add8cba2 100644
+index 16879dbc752cc..0f8e31e160cbb 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/settings/MainSettings.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/settings/MainSettings.java
-@@ -217,6 +217,8 @@ public class MainSettings extends PreferenceFragmentCompat
+@@ -209,6 +209,8 @@ public class MainSettings extends PreferenceFragmentCompat
+             templateUrlService.load();
          }
  
-         getPreferenceScreen().removePreference(findPreference(PREF_SAFETY_CHECK));
-+        getPreferenceScreen().removePreference(findPreference(PREF_ACCOUNT_AND_GOOGLE_SERVICES_SECTION));
-+        getPreferenceScreen().removePreference(findPreference(PREF_GOOGLE_SERVICES));
- 
++        getPreferenceScreen().removePreference(findPreference(PREF_SAFETY_CHECK));
++
          new AdaptiveToolbarStatePredictor(null).recomputeUiState(uiState -> {
              // We don't show the toolbar shortcut settings page if disabled from finch.
+             if (uiState.canShowUi) return;
