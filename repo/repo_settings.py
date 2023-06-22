@@ -19,16 +19,19 @@ import os
 import requests
 import subprocess
 import sys
+import yaml
 from xml.etree import ElementTree
 
 PORT = "29418"
 GERRIT = "review.leafos.org"
+leaf_devices = "leaf/devices/devices.yaml"
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", dest="project_file",
+    parser.add_argument("-b", "--branch")
+    parser.add_argument("-d", "--device")
+    parser.add_argument("-f", "--project_file",
                         default=".repo/manifests/snippets/leaf.xml")
-    parser.add_argument("-b", dest="branch")
     return parser.parse_args()
 
 def check_gh_token():
@@ -97,6 +100,19 @@ def set_gerrit_project_head(project, branch, user):
         check=False,
     )
 
+def get_projects_from_devices(device, branch):
+    projects = []
+
+    with open(leaf_devices) as f:
+        root = yaml.safe_load(f)
+
+    for item in root:
+        if device in item["device"]:
+            for repository in item["repositories"]:
+                projects.append({"name": repository["name"], "revision": branch})
+
+    return projects
+
 def get_projects_from_manifests(project_file, branch):
     projects = []
 
@@ -116,7 +132,10 @@ def main():
     gh_token = check_gh_token()
     gh_user = check_gh_user(gh_token)
 
-    projects = get_projects_from_manifests(args.project_file, args.branch)
+    if (args.device):
+        projects = get_projects_from_devices(args.device, args.branch)
+    else:
+        projects = get_projects_from_manifests(args.project_file, args.branch)
     for project in projects:
         name = project["name"]
         if ("LeafOS-Project" in name) or ("LeafOS-Blobs" in name) or ("LeafOS-Devices" in name):
