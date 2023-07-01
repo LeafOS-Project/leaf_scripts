@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 import argparse
+import json
 import os
 import requests
 import subprocess
@@ -25,13 +26,23 @@ from xml.etree import ElementTree
 PORT = "29418"
 GERRIT = "review.leafos.org"
 leaf_devices = "leaf/devices/devices.yaml"
+gerrit_structure = "leaf/gerrit-config/structure.yaml"
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-b", "--branch")
-    parser.add_argument("-d", "--device")
-    parser.add_argument("-f", "--project_file",
+    subparsers = parser.add_subparsers(dest='subcommand')
+    subparsers.required = True
+
+    # update
+    parser_update = subparsers.add_parser('update')
+    parser_update.add_argument("-b", "--branch")
+    parser_update.add_argument("-d", "--device")
+    parser_update.add_argument("-f", "--project_file",
                         default=".repo/manifests/snippets/leaf.xml")
+
+    # update_groups
+    parser_update_groups = subparsers.add_parser('update_groups')
+
     return parser.parse_args()
 
 def check_gh_token():
@@ -100,6 +111,13 @@ def set_gerrit_project_head(project, branch, user):
         check=False,
     )
 
+def set_gerrit_project_parent(project, parent, user):
+    subprocess.run(
+        ["ssh", "-n", "-p", PORT, f"{user}@{GERRIT}", "gerrit",
+            "set-project-parent", project, "--parent", parent],
+        check=False,
+    )
+
 def get_projects_from_devices(device, branch):
     projects = []
 
@@ -126,26 +144,71 @@ def get_projects_from_manifests(project_file, branch):
 
     return projects
 
+def get_projects_from_gerrit_structure():
+    with open(gerrit_structure, "r") as f:
+        return yaml.safe_load(f)
+
+def get_projects_from_gerrit(auth=None):
+    url = f"https://{GERRIT}/a/projects/?t" if auth else f"https://{GERRIT}/projects/?t"
+    resp = requests.get(url, auth=auth)
+    if resp.status_code != 200:
+        raise Exception(f"Error communicating with gerrit: {resp.text}")
+    projects = json.loads(resp.text[5:])
+    nodes = {}
+
+    for name, project in projects.items():
+        nodes[name] = []
+
+    for name, project in projects.items():
+        parent = project.get("parent")
+        if parent:
+            nodes[parent].append(name)
+    for project in nodes.keys():
+        nodes[project] = sorted(nodes[project])
+    return nodes
+
 def main():
     args = parse_args()
 
     gh_token = check_gh_token()
     gh_user = check_gh_user(gh_token)
 
-    if (args.device):
-        projects = get_projects_from_devices(args.device, args.branch)
-    else:
-        projects = get_projects_from_manifests(args.project_file, args.branch)
-    for project in projects:
-        name = project["name"]
-        if ("LeafOS-Project" in name) or ("LeafOS-Blobs" in name) or ("LeafOS-Devices" in name):
-            print(name)
-            org, repo = name.split("/")
-            branch = project["revision"]
-            create_github_repo(org, repo, gh_token)
-            set_github_repo_settings(name, branch, gh_token)
-            create_gerrit_project(name, branch, gh_user)
-            set_gerrit_project_head(name, branch, gh_user)
+    if args.subcommand == 'update':
+        if (args.device):
+            projects = get_projects_from_devices(args.device, args.branch)
+        else:
+            projects = get_projects_from_manifests(args.project_file, args.branch)
+        for project in projects:
+            name = project["name"]
+            if ("LeafOS-Project" in name) or ("LeafOS-Blobs" in name) or ("LeafOS-Devices" in name):
+                print(name)
+                org, repo = name.split("/")
+                branch = project["revision"]
+                create_github_repo(org, repo, gh_token)
+                set_github_repo_settings(name, branch, gh_token)
+                create_gerrit_project(name, branch, gh_user)
+                set_gerrit_project_head(name, branch, gh_user)
+    elif args.subcommand == 'update_groups':
+        projects = get_projects_from_gerrit_structure()
+        live_projects = get_projects_from_gerrit()
+        changes = {}
+
+        for parent, children in projects.items():
+            if parent in live_projects:
+                if (not projects[parent] or set(live_projects[parent]) == set(projects[parent])):
+                    continue
+                else:
+                    changes[parent] = list(set(projects[parent]) - set(live_projects[parent]))
+                    if not changes[parent]:
+                        del changes[parent]
+            else:
+                changes[parent] = children
+
+        if changes:
+            for parent, children in changes.items():
+                for child in children:
+                   print(f"Update parent of {child} to {parent}")
+                   set_gerrit_project_parent(child, parent, gh_user)
 
 if __name__ == "__main__":
     main()
