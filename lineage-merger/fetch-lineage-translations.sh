@@ -42,7 +42,7 @@ MANIFEST="${TOP}/.repo/manifests/snippets/leaf.xml"
 LEAF_BRANCH=$(git -C ${TOP}/.repo/manifests.git config --get branch.default.merge | sed 's#refs/heads/##g')
 
 # Build list of LeafOS forked repos
-PROJECTPATHS=$(repo forall -g default,-lineage -c '[ ! -z "$(find -name cm_strings.xml)" ] && echo "$REPO_PATH "')
+PROJECTPATHS=$(repo forall -g default,-lineage -c '[ ! -z "$(find -name cm_strings.xml -or -name cm_plurals.xml)" ] && echo "$REPO_PATH "')
 
 echo "#### LineageOS branch = ${BRANCH} Branch = ${LEAF_BRANCH} ####"
 
@@ -70,19 +70,33 @@ for PROJECTPATH in ${PROJECTPATHS}; do
     echo "### Fetching LineageOS strings from ${BRANCH} into ${PROJECTPATH} ###"
 
     EXTRAREFS=""
+    EXTRAPATHREPLACE=""
     # Upstream has some Settings strings in a dedicated repo
     if [ "$PROJECTPATH" = "packages/apps/Settings" ]; then
         git fetch https://github.com/LineageOS/android_packages_apps_LineageParts "${BRANCH}"
         EXTRAREFS=$(git rev-parse FETCH_HEAD)
     fi
+    # Upstream has some fwb strings in a dedicated repo
+    if [ "$PROJECTPATH" = "frameworks/base" ]; then
+        git fetch https://github.com/LineageOS/android_lineage-sdk "${BRANCH}"
+        EXTRAREFS=$(git rev-parse FETCH_HEAD)
+        EXTRAPATHREPLACE="core|lineage"
+    fi
 
     git fetch https://github.com/LineageOS/android_$(echo $PROJECTPATH | sed 's|/|_|g') "${BRANCH}"
 
-    for CM_STRINGS in $(find -iregex '.*/values/cm_strings.xml'); do
+    for CM_STRINGS in $(find -iregex '.*/values/cm_(strings|plurals).xml'); do
         STRINGS_TO_FIND=$(grep -Po '<(string|plurals) name="\K[^"]*' "$CM_STRINGS")
         PATTERN="$(dirname $CM_STRINGS | sed 's|^\./||g')-[^/]*/$(basename $CM_STRINGS)"
         for TRANSLATION in $(git ls-tree -r --name-only FETCH_HEAD | grep -P "$PATTERN"); do
-            EXTRATRANSLATION="$(dirname $TRANSLATION)/strings.xml"
+            if [ "$(basename $CM_STRINGS)" = "cm_plurals.xml" ]; then
+                EXTRATRANSLATION="$(dirname $TRANSLATION)/plurals.xml"
+            else
+                EXTRATRANSLATION="$(dirname $TRANSLATION/strings.xml"
+            fi
+            if [ ! -z "$EXTRAPATHREPLACE" ]; then
+                EXTRATRANSLATION="$(echo $EXTRATRANSLATION | sed s|$EXTRAPATHREPLACE|g)"
+            fi
             mkdir -p $(dirname $TRANSLATION)
             echo '<?xml version="1.0" encoding="utf-8"?>' > $TRANSLATION
             GIT_PAGER="cat" git show FETCH_HEAD:$TRANSLATION | grep -Pzo '<!--(\n( )*Copyright|\n/\*\*\n( )*\* Copyright)[\s\S]*?-->' | sed 's/\x0$/\n/g' >> $TRANSLATION
