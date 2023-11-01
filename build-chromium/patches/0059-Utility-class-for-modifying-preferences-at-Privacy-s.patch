@@ -8,8 +8,8 @@ Subject: [PATCH] Utility class for modifying preferences at Privacy section
  chrome/android/chrome_ext_java_sources.gni    |  1 +
  .../java/res/xml/privacy_preferences_ext.xml  |  9 +++
  .../privacy/settings/PrivacySettings.java     |  6 ++
- .../privacy/settings/PrivacySettingsExt.java  | 67 +++++++++++++++++++
- 5 files changed, 84 insertions(+)
+ .../privacy/settings/PrivacySettingsExt.java  | 72 +++++++++++++++++++
+ 5 files changed, 89 insertions(+)
  create mode 100644 chrome/android/java/res/xml/privacy_preferences_ext.xml
  create mode 100644 chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettingsExt.java
 
@@ -49,19 +49,19 @@ index 0000000000000..a352cd657b1b9
 +</PreferenceScreen>
 +
 diff --git a/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettings.java b/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettings.java
-index a9da397ba2eaf..26218b5511044 100644
+index 8ffb0e6dac424..17dc4ad79a508 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettings.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettings.java
-@@ -93,6 +93,8 @@ public class PrivacySettings extends PreferenceFragmentCompat
+@@ -84,6 +84,8 @@ public class PrivacySettings
              SettingsUtils.addPreferencesFromResource(this, R.xml.privacy_preferences);
          }
  
-+        PrivacySettingsExt.initializePreferences(this);
++        PrivacySettingsExt.initializePreferences(this, getProfile());
 +
          Preference sandboxPreference = findPreference(PREF_PRIVACY_SANDBOX);
-         if (PrivacySandboxBridge.isPrivacySandboxRestricted()
-                 && !PrivacySandboxBridge.isRestrictedNoticeEnabled()) {
-@@ -185,6 +187,8 @@ public class PrivacySettings extends PreferenceFragmentCompat
+         // Overwrite the click listener to pass a correct referrer to the fragment.
+         sandboxPreference.setOnPreferenceClickListener(preference -> {
+@@ -187,6 +189,8 @@ public class PrivacySettings
                      SingleCategorySettings.EXTRA_TITLE, thirdPartyCookies.getTitle().toString());
          }
  
@@ -70,21 +70,21 @@ index a9da397ba2eaf..26218b5511044 100644
          updatePreferences();
      }
  
-@@ -299,6 +303,8 @@ public class PrivacySettings extends PreferenceFragmentCompat
-                     UserPrefs.get(mProfile).getInteger(COOKIE_CONTROLS_MODE)));
+@@ -304,6 +308,8 @@ public class PrivacySettings
+                     UserPrefs.get(getProfile()).getInteger(COOKIE_CONTROLS_MODE)));
          }
  
-+        PrivacySettingsExt.updatePreferences(this);
++        PrivacySettingsExt.updatePreferences(this, getProfile());
 +
          updatePrivacyGuidePreferenceTitle();
      }
  
 diff --git a/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettingsExt.java b/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettingsExt.java
 new file mode 100644
-index 0000000000000..00a65cf922353
+index 0000000000000..fa6ef4589d6e9
 --- /dev/null
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettingsExt.java
-@@ -0,0 +1,67 @@
+@@ -0,0 +1,72 @@
 +// Copyright 2023 GrapheneOS
 +// Use of this source code is governed by a GPLv2-style license that can be
 +// found in the LICENSE file.
@@ -97,10 +97,10 @@ index 0000000000000..00a65cf922353
 +import androidx.preference.SwitchPreferenceCompat;
 +
 +import org.chromium.base.ThreadUtils;
++import org.chromium.base.shared_preferences.SharedPrefsUtils.SharedPrefsExt;
 +import org.chromium.chrome.R;
 +import org.chromium.chrome.browser.flags.ChromeFeatureList;
 +import org.chromium.chrome.browser.preferences.Pref;
-+import org.chromium.chrome.browser.preferences.SharedPrefsUtils.SharedPrefsExt;
 +import org.chromium.chrome.browser.profiles.Profile;
 +import org.chromium.chrome.browser.settings.ChromeManagedPreferenceDelegate;
 +import org.chromium.chrome.browser.settings.SettingsExtUtils;
@@ -112,31 +112,36 @@ index 0000000000000..00a65cf922353
 +
 +final class PrivacySettingsExt {
 +
-+    private static final Preference.OnPreferenceChangeListener LISTENER =
-+        (pref, val) -> {
-+            PrefService prefService = UserPrefs.get(Profile.getLastUsedRegularProfile());
++    private static final Preference.OnPreferenceChangeListener getListener(@NonNull Profile profile) {
++        return (pref, val) -> {
++            PrefService prefService = UserPrefs.get(profile);
 +            if (pref == null) {
 +                return false;
 +            }
 +            String key = pref.getKey();
 +            return true;
 +        };
++    }
 +
-+    private static final ChromeManagedPreferenceDelegate DELEGATE =
-+        pref -> {
-+            PrefService prefService = UserPrefs.get(Profile.getLastUsedRegularProfile());
-+            if (pref == null) {
++    private static final ChromeManagedPreferenceDelegate getDelegate(@NonNull Profile profile) {
++        return new ChromeManagedPreferenceDelegate(profile) {
++            @Override
++            public boolean isPreferenceControlledByPolicy(Preference pref) {
++                PrefService prefService = UserPrefs.get(profile);
++                if (pref == null) {
++                    return false;
++                }
++                String key = pref.getKey();
 +                return false;
 +            }
-+            String key = pref.getKey();
-+            return false;
 +        };
++    }
 +
 +    static void removeUnwantedPreferences(@NonNull PreferenceFragmentCompat prefFragment) {
 +        ThreadUtils.checkUiThread();
 +    }
 +
-+    static void initializePreferences(@NonNull PreferenceFragmentCompat prefFragment) {
++    static void initializePreferences(@NonNull PreferenceFragmentCompat prefFragment, @NonNull Profile profile) {
 +        ThreadUtils.checkUiThread();
 +        // This is such that privacy preferences are added at Privacy Section in newer UI,
 +        // and mostly kept on previous order at older UI.
@@ -147,8 +152,8 @@ index 0000000000000..00a65cf922353
 +        SettingsUtils.addPreferencesFromResource(prefFragment, R.xml.privacy_preferences_ext);
 +    }
 +
-+    static void updatePreferences(@NonNull PreferenceFragmentCompat prefFragment) {
++    static void updatePreferences(@NonNull PreferenceFragmentCompat prefFragment, @NonNull Profile profile) {
 +        ThreadUtils.checkUiThread();
-+        PrefService prefService = UserPrefs.get(Profile.getLastUsedRegularProfile());
++        PrefService prefService = UserPrefs.get(profile);
 +    }
 +}

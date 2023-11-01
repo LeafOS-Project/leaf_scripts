@@ -8,10 +8,10 @@ Subject: [PATCH] remove unwanted account and services section
  1 file changed, 2 insertions(+)
 
 diff --git a/chrome/android/java/src/org/chromium/chrome/browser/settings/MainSettings.java b/chrome/android/java/src/org/chromium/chrome/browser/settings/MainSettings.java
-index 0f8e31e160cbb..17088c8d6c9df 100644
+index 69fdd58bebbbf..33fce11a4818c 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/settings/MainSettings.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/settings/MainSettings.java
-@@ -210,6 +210,8 @@ public class MainSettings extends PreferenceFragmentCompat
+@@ -224,6 +224,8 @@ public class MainSettings extends ChromeBaseSettingsFragment
          }
  
          getPreferenceScreen().removePreference(findPreference(PREF_SAFETY_CHECK));
