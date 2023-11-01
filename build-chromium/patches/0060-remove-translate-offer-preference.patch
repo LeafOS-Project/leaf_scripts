@@ -4,16 +4,16 @@ Date: Fri, 2 Aug 2019 21:11:17 -0400
 Subject: [PATCH] remove translate offer preference
 
 ---
- .../language/settings/LanguageSettings.java   | 21 +------------------
- 1 file changed, 1 insertion(+), 20 deletions(-)
+ .../language/settings/LanguageSettings.java   | 26 +------------------
+ 1 file changed, 1 insertion(+), 25 deletions(-)
 
 diff --git a/chrome/browser/language/android/java/src/org/chromium/chrome/browser/language/settings/LanguageSettings.java b/chrome/browser/language/android/java/src/org/chromium/chrome/browser/language/settings/LanguageSettings.java
-index 3d35cb516928f..4689ed7213cd7 100644
+index b2080530c62ca..9afebfe5060d8 100644
 --- a/chrome/browser/language/android/java/src/org/chromium/chrome/browser/language/settings/LanguageSettings.java
 +++ b/chrome/browser/language/android/java/src/org/chromium/chrome/browser/language/settings/LanguageSettings.java
-@@ -109,26 +109,7 @@ public class LanguageSettings extends PreferenceFragmentCompat
+@@ -99,31 +99,7 @@ public class LanguageSettings extends ChromeBaseSettingsFragment
                  (ContentLanguagesPreference) findPreference(PREFERRED_LANGUAGES_KEY);
-         mLanguageListPref.registerActivityLauncher(this);
+         mLanguageListPref.initialize(this, getPrefService());
  
 -        ChromeSwitchPreference translateSwitch =
 -                (ChromeSwitchPreference) findPreference(TRANSLATE_SWITCH_KEY);
@@ -33,8 +33,13 @@ index 3d35cb516928f..4689ed7213cd7 100644
 -                return true;
 -            }
 -        });
--        translateSwitch.setManagedPreferenceDelegate((ChromeManagedPreferenceDelegate) preference
--                -> getPrefService().isManagedPreference(Pref.OFFER_TRANSLATE_ENABLED));
+-        translateSwitch.setManagedPreferenceDelegate(new ChromeManagedPreferenceDelegate(
+-                getProfile()) {
+-            @Override
+-            public boolean isPreferenceControlledByPolicy(Preference preference) {
+-                return getPrefService().isManagedPreference(Pref.OFFER_TRANSLATE_ENABLED);
+-            }
+-        });
 +        getPreferenceScreen().removePreference(findPreference(TRANSLATE_SWITCH_KEY));
      }
  
