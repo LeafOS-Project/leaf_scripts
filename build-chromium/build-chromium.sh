@@ -2,8 +2,8 @@
 
 set -e
 
-chromium_version="114.0.5735.58"
-chromium_code="573505800"
+chromium_version="119.0.6045.66"
+chromium_code="604506600"
 clean=0
 gsync=0
 supported_archs=(arm64 x64)
@@ -120,9 +120,11 @@ args+=' enable_nacl=false'
 args+=' blink_symbol_level=0'
 args+=' webview_devui_show_icon=false'
 args+=' dfmify_dev_ui=false'
-args+=' disable_autofill_assistant_dfm=true'
-args+=' disable_tab_ui_dfm=true'
 args+=' enable_gvr_services=false'
+args+=' enable_vr=false'
+args+=' enable_arcore=false'
+args+=' enable_openxr=false'
+args+=' enable_cardboard=false'
 args+=' disable_fieldtrial_testing_config=true'
 args+=' android_default_version_name="'$chromium_version'"'
 args+=' chrome_public_manifest_package="org.leafos.chromium"'
