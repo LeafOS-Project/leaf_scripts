@@ -14,7 +14,7 @@ Subject: [PATCH] Utility class for modifying preferences at Privacy section
  create mode 100644 chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettingsExt.java
 
 diff --git a/chrome/android/chrome_ext_java_resources.gni b/chrome/android/chrome_ext_java_resources.gni
-index 9980a7c5f6d84..164ef483d5a44 100644
+index 4ce3232392871..99618ae9ac2f1 100644
 --- a/chrome/android/chrome_ext_java_resources.gni
 +++ b/chrome/android/chrome_ext_java_resources.gni
 @@ -3,4 +3,5 @@
@@ -24,7 +24,7 @@ index 9980a7c5f6d84..164ef483d5a44 100644
 +  "java/res/xml/privacy_preferences_ext.xml",
  ]
 diff --git a/chrome/android/chrome_ext_java_sources.gni b/chrome/android/chrome_ext_java_sources.gni
-index b3a489f124aa8..d580fb6e83875 100644
+index b3fe144daf2d6..598bfaf9cb860 100644
 --- a/chrome/android/chrome_ext_java_sources.gni
 +++ b/chrome/android/chrome_ext_java_sources.gni
 @@ -4,4 +4,5 @@
@@ -49,20 +49,20 @@ index 0000000000000..a352cd657b1b9
 +</PreferenceScreen>
 +
 diff --git a/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettings.java b/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettings.java
-index 8ffb0e6dac424..17dc4ad79a508 100644
+index 85177ad55395a..621f86ce4473a 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettings.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettings.java
-@@ -84,6 +84,8 @@ public class PrivacySettings
-             SettingsUtils.addPreferencesFromResource(this, R.xml.privacy_preferences);
-         }
+@@ -78,6 +78,8 @@ public class PrivacySettings extends ChromeBaseSettingsFragment
+ 
+         SettingsUtils.addPreferencesFromResource(this, R.xml.privacy_preferences);
  
 +        PrivacySettingsExt.initializePreferences(this, getProfile());
 +
          Preference sandboxPreference = findPreference(PREF_PRIVACY_SANDBOX);
          // Overwrite the click listener to pass a correct referrer to the fragment.
-         sandboxPreference.setOnPreferenceClickListener(preference -> {
-@@ -187,6 +189,8 @@ public class PrivacySettings
-                     SingleCategorySettings.EXTRA_TITLE, thirdPartyCookies.getTitle().toString());
+         sandboxPreference.setOnPreferenceClickListener(
+@@ -205,6 +207,8 @@ public class PrivacySettings extends ChromeBaseSettingsFragment
+                             thirdPartyCookies.getTitle().toString());
          }
  
 +        PrivacySettingsExt.removeUnwantedPreferences(this);
@@ -70,8 +70,8 @@ index 8ffb0e6dac424..17dc4ad79a508 100644
          updatePreferences();
      }
  
-@@ -304,6 +308,8 @@ public class PrivacySettings
-                     UserPrefs.get(getProfile()).getInteger(COOKIE_CONTROLS_MODE)));
+@@ -326,6 +330,8 @@ public class PrivacySettings extends ChromeBaseSettingsFragment
+                             UserPrefs.get(getProfile()).getInteger(COOKIE_CONTROLS_MODE)));
          }
  
 +        PrivacySettingsExt.updatePreferences(this, getProfile());
