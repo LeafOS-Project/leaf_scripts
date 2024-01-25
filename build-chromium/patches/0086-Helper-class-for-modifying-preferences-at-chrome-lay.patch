@@ -10,7 +10,7 @@ Subject: [PATCH] Helper class for modifying preferences at chrome layer
  create mode 100644 chrome/android/java/src/org/chromium/chrome/browser/settings/SettingsExtUtils.java
 
 diff --git a/chrome/android/chrome_ext_java_sources.gni b/chrome/android/chrome_ext_java_sources.gni
-index fe72e9b1d3abb..b3a489f124aa8 100644
+index 3342c74236ea9..b3fe144daf2d6 100644
 --- a/chrome/android/chrome_ext_java_sources.gni
 +++ b/chrome/android/chrome_ext_java_sources.gni
 @@ -3,4 +3,5 @@

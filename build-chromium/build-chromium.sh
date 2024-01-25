@@ -2,8 +2,8 @@
 
 set -e
 
-chromium_version="119.0.6045.66"
-chromium_code="604506600"
+chromium_version="121.0.6167.71"
+chromium_code="616710100"
 clean=0
 gsync=0
 supported_archs=(arm64 x64)
@@ -89,7 +89,7 @@ fi
 
 if [ $gsync -eq 1 ]; then
     find src -name index.lock -delete
-    yes | gclient sync -R -r $chromium_version --no-history
+    yes | gclient sync -D -R -r $chromium_version --no-history
 fi
 cd src
 
