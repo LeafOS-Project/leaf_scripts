@@ -106,6 +106,7 @@ cp chrome/android/java/res_chromium_base/mipmap-xxhdpi/app_icon.png android_webv
 
 # Build args
 args='target_os="android"'
+args+=' android_channel="stable"'
 args+=' is_debug=false'
 args+=' is_official_build=true'
 args+=' is_chrome_branded=false'
