@@ -13,7 +13,7 @@ for PATCH in patches/*.patch; do
         exit 1
     fi
 
-     echo $NEWNAME
+    echo $NEWNAME
     mv patches/$PATCH patches/$NEWNAME
     wget -O patches/$NEWNAME https://raw.githubusercontent.com/GrapheneOS/Vanadium/main/patches/$NEWNAME
 done

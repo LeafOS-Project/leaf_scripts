@@ -49,7 +49,7 @@ index 0000000000000..a352cd657b1b9
 +</PreferenceScreen>
 +
 diff --git a/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettings.java b/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettings.java
-index 85177ad55395a..621f86ce4473a 100644
+index 6d36f86cc96e8..021a074b4b8d0 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettings.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettings.java
 @@ -78,6 +78,8 @@ public class PrivacySettings extends ChromeBaseSettingsFragment
@@ -61,7 +61,7 @@ index 85177ad55395a..621f86ce4473a 100644
          Preference sandboxPreference = findPreference(PREF_PRIVACY_SANDBOX);
          // Overwrite the click listener to pass a correct referrer to the fragment.
          sandboxPreference.setOnPreferenceClickListener(
-@@ -205,6 +207,8 @@ public class PrivacySettings extends ChromeBaseSettingsFragment
+@@ -203,6 +205,8 @@ public class PrivacySettings extends ChromeBaseSettingsFragment
                              thirdPartyCookies.getTitle().toString());
          }
  
@@ -70,7 +70,7 @@ index 85177ad55395a..621f86ce4473a 100644
          updatePreferences();
      }
  
-@@ -326,6 +330,8 @@ public class PrivacySettings extends ChromeBaseSettingsFragment
+@@ -324,6 +328,8 @@ public class PrivacySettings extends ChromeBaseSettingsFragment
                              UserPrefs.get(getProfile()).getInteger(COOKIE_CONTROLS_MODE)));
          }
  

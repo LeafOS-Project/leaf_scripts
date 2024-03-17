@@ -11,10 +11,10 @@ Subject: [PATCH] Utility class for adding shared preference keys
  create mode 100644 base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 3d538b3370caa..110eff5889447 100644
+index a989a351a8765..51084c21d7911 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -4507,6 +4507,9 @@ if (is_android) {
+@@ -4588,6 +4588,9 @@ if (is_android) {
        "android/java/src/org/chromium/base/shared_preferences/SharedPreferencesManager.java",
        "android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java",
      ]
@@ -23,7 +23,7 @@ index 3d538b3370caa..110eff5889447 100644
 +    ]
    }
  
-   android_aidl("process_launcher_aidl") {
+   android_library("base_cached_flags_java") {
 diff --git a/base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java b/base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java
 new file mode 100644
 index 0000000000000..d482be2d6cc06

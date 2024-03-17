@@ -7,43 +7,21 @@ This enables support for Android Autofil on tabs showing fillable
 entries, reusing the codebase used for webview's android autofill
 support.
 ---
- android_webview/browser/aw_autofill_client.cc |  4 ++
  chrome/android/BUILD.gn                       |  1 +
- .../chromium/chrome/browser/tab/TabImpl.java  | 44 +++++++++++++++++
+ .../chromium/chrome/browser/tab/TabImpl.java  | 45 +++++++++++++++++
  .../browser/tab/TabViewAndroidDelegate.java   | 13 +++++
  chrome/browser/BUILD.gn                       |  7 +++
- .../ui/autofill/chrome_autofill_client.cc     | 14 +++++-
+ .../ui/autofill/chrome_autofill_client.cc     |  4 ++
+ .../browser/android_autofill_client.cc        |  4 ++
  .../embedder_support/view/ContentView.java    | 48 +++++++++++++++++++
  .../chromium/ui/base/ViewAndroidDelegate.java |  8 ++++
- 8 files changed, 138 insertions(+), 1 deletion(-)
+ 8 files changed, 130 insertions(+)
 
-diff --git a/android_webview/browser/aw_autofill_client.cc b/android_webview/browser/aw_autofill_client.cc
-index e78b00768655b..4a76d9c0502c8 100644
---- a/android_webview/browser/aw_autofill_client.cc
-+++ b/android_webview/browser/aw_autofill_client.cc
-@@ -73,6 +73,7 @@ AwAutofillClient::GetURLLoaderFactory() {
- 
- autofill::AutofillCrowdsourcingManager*
- AwAutofillClient::GetCrowdsourcingManager() {
-+#if defined(USE_BROWSER_AUTOFILL_ONLY)
-   if (autofill::AutofillProvider::
-           is_crowdsourcing_manager_disabled_for_testing()) {
-     return nullptr;
-@@ -84,6 +85,9 @@ AwAutofillClient::GetCrowdsourcingManager() {
-             this, GetChannel(), GetLogManager());
-   }
-   return crowdsourcing_manager_.get();
-+#else
-+  return nullptr;
-+#endif // defined(USE_BROWSER_AUTOFILL_ONLY)
- }
- 
- autofill::PersonalDataManager* AwAutofillClient::GetPersonalDataManager() {
 diff --git a/chrome/android/BUILD.gn b/chrome/android/BUILD.gn
-index dac7963df6224..b85c663c9a714 100644
+index fec47e97f8fe6..bd79fac82ab09 100644
 --- a/chrome/android/BUILD.gn
 +++ b/chrome/android/BUILD.gn
-@@ -467,6 +467,7 @@ if (current_toolchain == default_toolchain) {
+@@ -472,6 +472,7 @@ if (current_toolchain == default_toolchain) {
        "//chrome/browser/xsurface:java",
        "//chrome/browser/xsurface_provider:dependency_provider_impl_java",
        "//chrome/browser/xsurface_provider:java",
@@ -52,13 +30,13 @@ index dac7963df6224..b85c663c9a714 100644
        "//components/background_task_scheduler:background_task_scheduler_java",
        "//components/background_task_scheduler:background_task_scheduler_task_ids_java",
 diff --git a/chrome/android/java/src/org/chromium/chrome/browser/tab/TabImpl.java b/chrome/android/java/src/org/chromium/chrome/browser/tab/TabImpl.java
-index f5f10dd2f13a1..97c29c85df08b 100644
+index 4fca840ad3a78..88cfd11aa8045 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/tab/TabImpl.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/tab/TabImpl.java
-@@ -10,10 +10,14 @@ import android.annotation.SuppressLint;
- import android.app.Activity;
+@@ -9,10 +9,14 @@ import android.app.Activity;
  import android.content.Context;
  import android.graphics.Rect;
+ import android.net.Uri;
 +import android.os.Build;
  import android.text.TextUtils;
 +import android.util.SparseArray;
@@ -70,18 +48,19 @@ index f5f10dd2f13a1..97c29c85df08b 100644
  
  import androidx.annotation.NonNull;
  import androidx.annotation.Nullable;
-@@ -51,6 +55,7 @@ import org.chromium.chrome.browser.rlz.RevenueStats;
+@@ -54,6 +58,8 @@ import org.chromium.chrome.browser.tab.Tab.LoadUrlResult;
  import org.chromium.chrome.browser.tab.TabUtils.UseDesktopUserAgentCaller;
  import org.chromium.chrome.browser.ui.native_page.FrozenNativePage;
  import org.chromium.chrome.browser.ui.native_page.NativePage;
 +import org.chromium.components.autofill.AutofillProvider;
++// import org.chromium.components.autofill.AutofillSelectionMenuItemHelper;
  import org.chromium.components.dom_distiller.core.DomDistillerUrlUtils;
  import org.chromium.components.embedder_support.util.UrlConstants;
  import org.chromium.components.embedder_support.view.ContentView;
-@@ -64,9 +69,11 @@ import org.chromium.content_public.browser.ChildProcessImportance;
- import org.chromium.content_public.browser.ContentFeatureList;
+@@ -65,9 +71,11 @@ import org.chromium.content_public.browser.ContentFeatureList;
  import org.chromium.content_public.browser.ContentFeatureMap;
  import org.chromium.content_public.browser.LoadUrlParams;
+ import org.chromium.content_public.browser.NavigationHandle;
 +import org.chromium.content_public.browser.SelectionPopupController;
  import org.chromium.content_public.browser.WebContents;
  import org.chromium.content_public.browser.WebContentsAccessibility;
@@ -90,15 +69,15 @@ index f5f10dd2f13a1..97c29c85df08b 100644
  import org.chromium.ui.base.PageTransition;
  import org.chromium.ui.base.ViewAndroidDelegate;
  import org.chromium.ui.base.WindowAndroid;
-@@ -200,6 +207,7 @@ class TabImpl implements Tab {
-     private int mParentId = INVALID_TAB_ID;
+@@ -203,6 +211,7 @@ class TabImpl implements Tab {
      private int mRootId;
+     private @Nullable Token mTabGroupId;
      private @TabUserAgent int mUserAgent = TabUserAgent.DEFAULT;
 +    AutofillProvider mAutofillProvider;
  
      /**
       * Navigation state of the WebContents as returned by nativeGetContentsStateAsByteBuffer(),
-@@ -259,12 +267,18 @@ class TabImpl implements Tab {
+@@ -271,12 +280,18 @@ class TabImpl implements Tab {
                      public void onViewAttachedToWindow(View view) {
                          mIsViewAttachedToWindow = true;
                          updateInteractableState();
@@ -117,7 +96,7 @@ index f5f10dd2f13a1..97c29c85df08b 100644
                      }
                  };
          mTabViewManager = new TabViewManagerImpl(this);
-@@ -844,6 +858,11 @@ class TabImpl implements Tab {
+@@ -857,6 +872,11 @@ class TabImpl implements Tab {
          for (TabObserver observer : mObservers) observer.onDestroyed(this);
          mObservers.clear();
  
@@ -129,7 +108,7 @@ index f5f10dd2f13a1..97c29c85df08b 100644
          mUserDataHost.destroy();
          mTabViewManager.destroy();
          hideNativePage(false, null);
-@@ -1424,6 +1443,18 @@ class TabImpl implements Tab {
+@@ -1454,6 +1474,18 @@ class TabImpl implements Tab {
          return mWebContentsState == null ? -1 : mWebContentsState.version();
      }
  
@@ -148,7 +127,7 @@ index f5f10dd2f13a1..97c29c85df08b 100644
      /**
       * Initializes the {@link WebContents}. Completes the browser content components initialization
       * around a native WebContents pointer.
-@@ -1479,6 +1510,12 @@ class TabImpl implements Tab {
+@@ -1509,6 +1541,12 @@ class TabImpl implements Tab {
              boolean isBackgroundTab = isDetached();
  
              assert mNativeTabAndroid != 0;
@@ -161,7 +140,7 @@ index f5f10dd2f13a1..97c29c85df08b 100644
              TabImplJni.get()
                      .initWebContents(
                              mNativeTabAndroid,
-@@ -1489,6 +1526,13 @@ class TabImpl implements Tab {
+@@ -1519,6 +1557,13 @@ class TabImpl implements Tab {
                              new TabContextMenuPopulatorFactory(
                                      mDelegateFactory.createContextMenuPopulatorFactory(this),
                                      this));
@@ -208,10 +187,10 @@ index d5e0e3e9237ed..9af9e3dedbaf7 100644
      public void onTopControlsChanged(
              int topControlsOffsetY, int contentOffsetY, int topControlsMinHeightOffsetY) {
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index afdf577837a49..d18e8c3ec8661 100644
+index e9c28ab05bd01..d8685ce0ef18c 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -2662,6 +2662,13 @@ static_library("browser") {
+@@ -2660,6 +2660,13 @@ static_library("browser") {
      deps += [ "//chrome/browser/error_reporting" ]
    }
  
@@ -226,20 +205,10 @@ index afdf577837a49..d18e8c3ec8661 100644
      deps += [
        "//ui/events/ozone",
 diff --git a/chrome/browser/ui/autofill/chrome_autofill_client.cc b/chrome/browser/ui/autofill/chrome_autofill_client.cc
-index 4707fc2d949d2..e762cddf40665 100644
+index c270bf816f25d..4e592b70f7ba7 100644
 --- a/chrome/browser/ui/autofill/chrome_autofill_client.cc
 +++ b/chrome/browser/ui/autofill/chrome_autofill_client.cc
-@@ -58,6 +58,9 @@
- #include "chrome/browser/web_data_service_factory.h"
- #include "chrome/common/channel_info.h"
- #include "chrome/common/url_constants.h"
-+#if BUILDFLAG(IS_ANDROID)
-+#include "components/android_autofill/browser/android_autofill_manager.h"
-+#endif // BUILDFLAG(IS_ANDROID)
- #include "components/autofill/content/browser/autofill_log_router_factory.h"
- #include "components/autofill/content/browser/content_autofill_driver.h"
- #include "components/autofill/content/browser/content_autofill_driver_factory.h"
-@@ -218,12 +221,16 @@ ChromeAutofillClient::GetURLLoaderFactory() {
+@@ -245,12 +245,16 @@ ChromeAutofillClient::GetURLLoaderFactory() {
  }
  
  AutofillCrowdsourcingManager* ChromeAutofillClient::GetCrowdsourcingManager() {
@@ -256,20 +225,28 @@ index 4707fc2d949d2..e762cddf40665 100644
  }
  
  AutofillOptimizationGuide* ChromeAutofillClient::GetAutofillOptimizationGuide()
-@@ -1362,7 +1369,12 @@ void ChromeAutofillClient::OnZoomChanged(
- ChromeAutofillClient::ChromeAutofillClient(content::WebContents* web_contents)
-     : ContentAutofillClient(
-           web_contents,
--          base::BindRepeating(&BrowserDriverInitHook,
-+          base::BindRepeating(
-+#if BUILDFLAG(IS_ANDROID)
-+                              &AndroidAndBrowserDriverInitHook,
+diff --git a/components/android_autofill/browser/android_autofill_client.cc b/components/android_autofill/browser/android_autofill_client.cc
+index 55ccc058fd391..8247c5b9faf3c 100644
+--- a/components/android_autofill/browser/android_autofill_client.cc
++++ b/components/android_autofill/browser/android_autofill_client.cc
+@@ -73,6 +73,7 @@ AndroidAutofillClient::GetURLLoaderFactory() {
+ 
+ autofill::AutofillCrowdsourcingManager*
+ AndroidAutofillClient::GetCrowdsourcingManager() {
++#if defined(USE_BROWSER_AUTOFILL_ONLY)
+   if (autofill::AutofillProvider::
+           is_crowdsourcing_manager_disabled_for_testing()) {
+     return nullptr;
+@@ -84,6 +85,9 @@ AndroidAutofillClient::GetCrowdsourcingManager() {
+             this, GetChannel(), GetLogManager());
+   }
+   return crowdsourcing_manager_.get();
 +#else
-+                              &BrowserDriverInitHook,
-+#endif // BUILDFLAG(IS_ANDROID)
-                               this,
-                               g_browser_process->GetApplicationLocale())),
-       content::WebContentsObserver(web_contents),
++  return nullptr;
++#endif // defined(USE_BROWSER_AUTOFILL_ONLY)
+ }
+ 
+ autofill::PersonalDataManager* AndroidAutofillClient::GetPersonalDataManager() {
 diff --git a/components/embedder_support/android/java/src/org/chromium/components/embedder_support/view/ContentView.java b/components/embedder_support/android/java/src/org/chromium/components/embedder_support/view/ContentView.java
 index abe1ac2b7907d..9cf691982660d 100644
 --- a/components/embedder_support/android/java/src/org/chromium/components/embedder_support/view/ContentView.java
@@ -356,7 +333,7 @@ index abe1ac2b7907d..9cf691982660d 100644
 +    }
  }
 diff --git a/ui/android/java/src/org/chromium/ui/base/ViewAndroidDelegate.java b/ui/android/java/src/org/chromium/ui/base/ViewAndroidDelegate.java
-index 0bd9924087048..b2b110c91c1c3 100644
+index 99b29f07becf9..25c744ce5d74e 100644
 --- a/ui/android/java/src/org/chromium/ui/base/ViewAndroidDelegate.java
 +++ b/ui/android/java/src/org/chromium/ui/base/ViewAndroidDelegate.java
 @@ -32,6 +32,10 @@ import org.chromium.ui.dragdrop.DragStateTracker;
@@ -370,7 +347,7 @@ index 0bd9924087048..b2b110c91c1c3 100644
  /** Class to acquire, position, and remove anchor views from the implementing View. */
  @JNINamespace("ui")
  public class ViewAndroidDelegate {
-@@ -586,4 +590,8 @@ public class ViewAndroidDelegate {
+@@ -573,4 +577,8 @@ public class ViewAndroidDelegate {
          sDragAndDropDelegateForTesting = testDelegate;
          ResettersForTesting.register(() -> sDragAndDropDelegateForTesting = null);
      }
