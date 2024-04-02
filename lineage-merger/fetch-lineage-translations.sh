@@ -92,7 +92,7 @@ for PROJECTPATH in ${PROJECTPATHS}; do
             if [ "$(basename $CM_STRINGS)" = "cm_plurals.xml" ]; then
                 EXTRATRANSLATION="$(dirname $TRANSLATION)/plurals.xml"
             else
-                EXTRATRANSLATION="$(dirname $TRANSLATION/strings.xml"
+                EXTRATRANSLATION="$(dirname $TRANSLATION)/strings.xml"
             fi
             if [ ! -z "$EXTRAPATHREPLACE" ]; then
                 EXTRATRANSLATION="$(echo $EXTRATRANSLATION | sed s|$EXTRAPATHREPLACE|g)"
