@@ -16,7 +16,7 @@
 #
 
 usage() {
-    echo "Usage ${0} -n <new-tag>"
+    echo "Usage ${0} -n <new-tag> [-f <file>] [-p]"
 }
 
 # Verify argument count
@@ -25,10 +25,18 @@ if [ "${#}" -lt 2 ]; then
     exit 1
 fi
 
+FILE="merged_repos.txt"
+PUSH=""
 while [ "${#}" -gt 0 ]; do
     case "${1}" in
         -n | --new-tag)
            NEWTAG="${2}"; shift
+           ;;
+        -f | --file)
+           FILE="${2}"; shift
+           ;;
+        -p | --push)
+           PUSH="y"
            ;;
         *)
            usage
@@ -48,17 +56,23 @@ fi
 . build/envsetup.sh
 
 TOP="$(gettop)"
-MERGEDREPOS="${TOP}/merged_repos.txt"
+MERGEDREPOS="${TOP}/${FILE}"
 MANIFEST="${TOP}/.repo/manifests/snippets/leaf.xml"
-BRANCH=$(git -C ${TOP}/.repo/manifests.git config --get branch.default.merge | sed 's#refs/heads/##g')
 TOPIC="${NEWTAG}"
 
 for PROJECTPATH in $(cat "${MERGEDREPOS}" | grep 'merge' | cut -f3); do
     cd "${TOP}/${PROJECTPATH}"
+
+    BRANCH="$(repo info . | grep 'Manifest revision' | cut -f2 -d ' ')"
 
     echo "#### Pushing ${PROJECTPATH} merge to review ####"
     MERGE="$(git log --pretty=%H --merges -n 1)"
     FIRST_SHA="$(git show -s --pretty=%P ${MERGE} | cut -d ' ' -f 1)"
     SECOND_SHA="$(git show -s --pretty=%P ${MERGE} | cut -d ' ' -f 2)"
     git push leaf HEAD:refs/for/"${BRANCH}"%base="${FIRST_SHA}",base="${SECOND_SHA}",topic="${TOPIC}"
+
+    if [ ! -z "$PUSH" ]; then
+        echo "#### Pushing ${PROJECTPATH} ####"
+        git push leaf HEAD:refs/heads/"${BRANCH}"
+    fi
 done
