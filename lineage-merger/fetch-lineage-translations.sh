@@ -85,14 +85,14 @@ for PROJECTPATH in ${PROJECTPATHS}; do
 
     git fetch https://github.com/LineageOS/android_$(echo $PROJECTPATH | sed 's|/|_|g') "${BRANCH}"
 
-    for CM_STRINGS in $(find -iregex '.*/values/cm_(strings|plurals).xml'); do
+    for CM_STRINGS in $(find -iregex '.*/values/cm_\(strings\|plurals\).xml'); do
         STRINGS_TO_FIND=$(grep -Po '<(string|plurals) name="\K[^"]*' "$CM_STRINGS")
         PATTERN="$(dirname $CM_STRINGS | sed 's|^\./||g')-[^/]*/$(basename $CM_STRINGS)"
         for TRANSLATION in $(git ls-tree -r --name-only FETCH_HEAD | grep -P "$PATTERN"); do
             if [ "$(basename $CM_STRINGS)" = "cm_plurals.xml" ]; then
                 EXTRATRANSLATION="$(dirname $TRANSLATION)/plurals.xml"
             else
-                EXTRATRANSLATION="$(dirname $TRANSLATION/strings.xml"
+                EXTRATRANSLATION="$(dirname $TRANSLATION)/strings.xml"
             fi
             if [ ! -z "$EXTRAPATHREPLACE" ]; then
                 EXTRATRANSLATION="$(echo $EXTRATRANSLATION | sed s|$EXTRAPATHREPLACE|g)"
