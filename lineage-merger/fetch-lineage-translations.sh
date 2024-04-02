@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2022 The LeafOS Project
+# Copyright (C) 2022-2024 The LeafOS Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -80,48 +80,66 @@ for PROJECTPATH in ${PROJECTPATHS}; do
     if [ "$PROJECTPATH" = "frameworks/base" ]; then
         git fetch https://github.com/LineageOS/android_lineage-sdk "${BRANCH}"
         EXTRAREFS=$(git rev-parse FETCH_HEAD)
-        EXTRAPATHREPLACE="core|lineage"
+        EXTRAPATHREPLACE="^core|lineage"
+        EXTRAPATHREPLACE_REV="^lineage|core"
     fi
 
     git fetch https://github.com/LineageOS/android_$(echo $PROJECTPATH | sed 's|/|_|g') "${BRANCH}"
 
+    # Delete old translations
+    find -iregex '.*/values-.*/cm_\(strings\|plurals\).xml' -delete
     for CM_STRINGS in $(find -iregex '.*/values/cm_\(strings\|plurals\).xml'); do
         STRINGS_TO_FIND=$(grep -Po '<(string|plurals) name="\K[^"]*' "$CM_STRINGS")
         PATTERN="$(dirname $CM_STRINGS | sed 's|^\./||g')-[^/]*/$(basename $CM_STRINGS)"
-        for TRANSLATION in $(git ls-tree -r --name-only FETCH_HEAD | grep -P "$PATTERN"); do
-            if [ "$(basename $CM_STRINGS)" = "cm_plurals.xml" ]; then
-                EXTRATRANSLATION="$(dirname $TRANSLATION)/plurals.xml"
-            else
-                EXTRATRANSLATION="$(dirname $TRANSLATION)/strings.xml"
-            fi
-            if [ ! -z "$EXTRAPATHREPLACE" ]; then
-                EXTRATRANSLATION="$(echo $EXTRATRANSLATION | sed "s|$EXTRAPATHREPLACE|g")"
-            fi
-            mkdir -p $(dirname $TRANSLATION)
-            echo '<?xml version="1.0" encoding="utf-8"?>' > $TRANSLATION
-            GIT_PAGER="cat" git show FETCH_HEAD:$TRANSLATION | grep -Pzo '<!--(\n( )*Copyright|\n/\*\*\n( )*\* Copyright)[\s\S]*?-->' | sed 's/\x0$/\n/g' >> $TRANSLATION
-            echo '<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">' >> $TRANSLATION
 
-            for STRING in $STRINGS_TO_FIND; do
-                for REF in "FETCH_HEAD" $EXTRAREFS; do
-                    FILENAME=$TRANSLATION
-                    if [ "$REF" != "FETCH_HEAD" ]; then
-                        FILENAME=$EXTRATRANSLATION
-                        if [ -z "$(git ls-tree -r --name-only $REF $FILENAME)" ]; then
-                            continue;
-                        fi
+        for REF in "FETCH_HEAD" $EXTRAREFS; do
+            LOCAL_PATTERN="$PATTERN"
+            if [ "$REF" != "FETCH_HEAD" ]; then
+                if [ ! -z "$EXTRAPATHREPLACE" ]; then
+                    LOCAL_PATTERN="$(echo $LOCAL_PATTERN | sed -e "s|$EXTRAPATHREPLACE|g")"
+                fi
+
+                if [ "$(basename $CM_STRINGS)" = "cm_plurals.xml" ]; then
+                    LOCAL_PATTERN="$(echo $LOCAL_PATTERN | sed -e 's/cm_plurals.xml$/plurals.xml/g')"
+                else
+                    LOCAL_PATTERN="$(echo $LOCAL_PATTERN | sed -e 's/cm_strings.xml$/strings.xml/g')"
+                fi
+            fi
+
+            for TRANSLATION in $(git ls-tree -r --name-only "$REF" | grep -P "$LOCAL_PATTERN"); do
+                FILENAME="$TRANSLATION"
+                if [ "$REF" != "FETCH_HEAD" ]; then
+                    if [ ! -z "$EXTRAPATHREPLACE_REV" ]; then
+                        FILENAME="$(echo $FILENAME | sed -e "s|$EXTRAPATHREPLACE_REV|g")"
                     fi
 
-                    LINE=$(GIT_PAGER="cat" git show $REF:$FILENAME | grep -Pzo "    <(string|plurals) name=\"$STRING\">[\s\S]*?</(string|plurals)>" | sed 's/\x0$/\n/g')
+                    if [ "$(basename $TRANSLATION)" = "plurals.xml" ]; then
+                        FILENAME="$(echo $FILENAME | sed -e 's/plurals.xml$/cm_plurals.xml/g')"
+                    else
+                        FILENAME="$(echo $FILENAME | sed -e 's/strings.xml$/cm_strings.xml/g')"
+                    fi
+                fi
+
+                mkdir -p $(dirname "$FILENAME")
+                if [ ! -f "$FILENAME" ]; then
+                    echo '<?xml version="1.0" encoding="utf-8"?>' > "$FILENAME"
+                    GIT_PAGER="cat" git show "$REF":"$TRANSLATION" | grep -Pzo '<!--(\n( )*Copyright|\n/\*\*\n( )*\* Copyright)[\s\S]*?-->' | sed 's/\x0$/\n/g' >> "$FILENAME"
+                    echo '<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">' >> "$FILENAME"
+                fi
+
+                for STRING in $STRINGS_TO_FIND; do
+                    LINE=$(GIT_PAGER="cat" git show "$REF":"$TRANSLATION" | grep -Pzo "    <(string|plurals) name=\"$STRING\">[\s\S]*?</(string|plurals)>" | sed 's/\x0$/\n/g')
+
                     if [ ! -z "$LINE" ]; then
-                        echo "$LINE" >> $TRANSLATION
-                        break;
+                        echo "$LINE" >> "$FILENAME"
                     fi
                 done
             done
-
-            echo '</resources>' >> $TRANSLATION
         done
+    done
+    # Insert closing resources tag into all new files
+    for CM_STRINGS in $(find -iregex '.*/values-.*/cm_\(strings\|plurals\).xml'); do
+        echo '</resources>' >> $CM_STRINGS
     done
 
     if [[ -n "$(git status --porcelain)" ]]; then
