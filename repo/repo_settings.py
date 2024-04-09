@@ -34,13 +34,19 @@ def parse_args():
     subparsers = parser.add_subparsers(dest="subcommand")
     subparsers.required = True
 
-    # update
-    parser_update = subparsers.add_parser("update")
-    parser_update.add_argument("-b", "--branch")
-    parser_update.add_argument("-d", "--device")
-    parser_update.add_argument(
+    # create project
+    parser_project = subparsers.add_parser("create_project")
+    parser_project.add_argument("-b", "--branch", required=True)
+    parser_project.add_argument("-d", "--device")
+    parser_project.add_argument(
         "-f", "--project_file", default=".repo/manifests/snippets/leaf.xml"
     )
+
+    # create branch
+    parser_branch = subparsers.add_parser("create_branch")
+    parser_branch.add_argument("-n", "--new_branch", required=True)
+    parser_branch.add_argument("-b", "--base_branch", dest="branch", required=True)
+    parser_branch.add_argument("-d", "--device", required=True)
 
     # update_groups
     parser_update_groups = subparsers.add_parser("update_groups")
@@ -123,6 +129,24 @@ def create_gerrit_project(project, branch, user):
             ],
             check=True,
         )
+
+
+def create_gerrit_branch(project, new_branch, base_branch, user):
+    subprocess.run(
+        [
+            "ssh",
+            "-n",
+            "-p",
+            PORT,
+            f"{user}@{GERRIT}",
+            "gerrit",
+            "create-branch",
+            project,
+            new_branch,
+            base_branch,
+        ],
+        check=True,
+    )
 
 
 def set_gerrit_project_head(project, branch, user):
@@ -228,25 +252,28 @@ def main():
     gh_token = check_gh_token()
     gh_user = check_gh_user(gh_token)
 
-    if args.subcommand == "update":
+    if args.subcommand in ["create_project", "create_branch"]:
         if args.device:
             projects = get_projects_from_devices(args.device, args.branch)
         else:
             projects = get_projects_from_manifests(args.project_file, args.branch)
+
         for project in projects:
             name = project["name"]
-            if (
-                ("LeafOS-Project" in name)
-                or ("LeafOS-Blobs" in name)
-                or ("LeafOS-Devices" in name)
+            if any(
+                keyword in name
+                for keyword in ["LeafOS-Project", "LeafOS-Blobs", "LeafOS-Devices"]
             ):
                 print(name)
                 org, repo = name.split("/")
                 branch = project["revision"]
-                create_github_repo(org, repo, gh_token)
-                set_github_repo_settings(name, branch, gh_token)
-                create_gerrit_project(name, branch, gh_user)
-                set_gerrit_project_head(name, branch, gh_user)
+                if args.subcommand == "create_branch":
+                    create_gerrit_branch(name, args.new_branch, args.branch, gh_user)
+                else:
+                    create_github_repo(org, repo, gh_token)
+                    set_github_repo_settings(name, branch, gh_token)
+                    create_gerrit_project(name, branch, gh_user)
+                    set_gerrit_project_head(name, branch, gh_user)
     elif args.subcommand == "update_groups":
         projects = get_projects_from_gerrit_structure()
         live_projects = get_projects_from_gerrit()
