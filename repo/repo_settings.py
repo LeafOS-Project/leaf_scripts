@@ -28,26 +28,29 @@ GERRIT = "review.leafos.org"
 leaf_devices = "leaf/devices/devices.yaml"
 gerrit_structure = "leaf/gerrit-config/structure.yaml"
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(dest='subcommand')
+    subparsers = parser.add_subparsers(dest="subcommand")
     subparsers.required = True
 
     # update
-    parser_update = subparsers.add_parser('update')
+    parser_update = subparsers.add_parser("update")
     parser_update.add_argument("-b", "--branch")
     parser_update.add_argument("-d", "--device")
-    parser_update.add_argument("-f", "--project_file",
-                        default=".repo/manifests/snippets/leaf.xml")
-    parser_update.add_argument("--no-default-branch", action='store_true')
+    parser_update.add_argument(
+        "-f", "--project_file", default=".repo/manifests/snippets/leaf.xml"
+    )
+    parser_update.add_argument("--no-default-branch", action="store_true")
 
     # update_groups
-    parser_update_groups = subparsers.add_parser('update_groups')
+    parser_update_groups = subparsers.add_parser("update_groups")
 
     # fetch_structure_from_gerrit
-    parser_fetch_structure = subparsers.add_parser('fetch_structure_from_gerrit')
+    parser_fetch_structure = subparsers.add_parser("fetch_structure_from_gerrit")
 
     return parser.parse_args()
+
 
 def check_gh_token():
     gh_token = os.environ.get("GH_TOKEN")
@@ -55,6 +58,7 @@ def check_gh_token():
         print("GH_TOKEN is not set!")
         sys.exit(1)
     return gh_token
+
 
 def check_gh_user(token):
     user = requests.get(
@@ -65,6 +69,7 @@ def check_gh_user(token):
         },
     ).json()["login"]
     return user
+
 
 def create_github_repo(org, repo, token):
     url = f"https://api.github.com/orgs/{org}/repos"
@@ -81,6 +86,7 @@ def create_github_repo(org, repo, token):
     }
     requests.post(url, headers=headers, json=data)
 
+
 def set_github_repo_settings(project, branch, token, no_default_branch):
     url = f"https://api.github.com/repos/{project}"
     headers = {
@@ -93,8 +99,9 @@ def set_github_repo_settings(project, branch, token, no_default_branch):
         "has_wiki": False,
     }
     if not no_default_branch:
-        data["default_branch"] = branch;
+        data["default_branch"] = branch
     requests.patch(url, headers=headers, json=data)
+
 
 def create_gerrit_project(project, branch, user):
     projects = subprocess.run(
@@ -104,24 +111,57 @@ def create_gerrit_project(project, branch, user):
     ).stdout.split("\n")
     if project not in projects:
         subprocess.run(
-            ["ssh", "-n", "-p", PORT, f"{user}@{GERRIT}",
-                "gerrit", "create-project", project, "-b", branch],
+            [
+                "ssh",
+                "-n",
+                "-p",
+                PORT,
+                f"{user}@{GERRIT}",
+                "gerrit",
+                "create-project",
+                project,
+                "-b",
+                branch,
+            ],
             check=True,
         )
 
+
 def set_gerrit_project_head(project, branch, user):
     subprocess.run(
-        ["ssh", "-n", "-p", PORT, f"{user}@{GERRIT}", "gerrit",
-            "set-head", project, "--new-head", branch],
+        [
+            "ssh",
+            "-n",
+            "-p",
+            PORT,
+            f"{user}@{GERRIT}",
+            "gerrit",
+            "set-head",
+            project,
+            "--new-head",
+            branch,
+        ],
         check=False,
     )
 
+
 def set_gerrit_project_parent(project, parent, user):
     subprocess.run(
-        ["ssh", "-n", "-p", PORT, f"{user}@{GERRIT}", "gerrit",
-            "set-project-parent", project, "--parent", parent],
+        [
+            "ssh",
+            "-n",
+            "-p",
+            PORT,
+            f"{user}@{GERRIT}",
+            "gerrit",
+            "set-project-parent",
+            project,
+            "--parent",
+            parent,
+        ],
         check=False,
     )
+
 
 def get_projects_from_devices(device, branch):
     projects = []
@@ -136,6 +176,7 @@ def get_projects_from_devices(device, branch):
 
     return projects
 
+
 def get_projects_from_manifests(project_file, branch):
     projects = []
 
@@ -144,14 +185,20 @@ def get_projects_from_manifests(project_file, branch):
 
         for project in root.findall("project"):
             name = project.get("name")
-            revision = branch or project.get("revision") or root.find("default").get("revision").split("/")[-1]
+            revision = (
+                branch
+                or project.get("revision")
+                or root.find("default").get("revision").split("/")[-1]
+            )
             projects.append({"name": name, "revision": revision})
 
     return projects
 
+
 def get_projects_from_gerrit_structure():
     with open(gerrit_structure, "r") as f:
         return yaml.safe_load(f)
+
 
 def get_projects_from_gerrit(auth=None):
     url = f"https://{GERRIT}/a/projects/?t" if auth else f"https://{GERRIT}/projects/?t"
@@ -172,20 +219,25 @@ def get_projects_from_gerrit(auth=None):
         nodes[project] = sorted(nodes[project])
     return nodes
 
+
 def main():
     args = parse_args()
 
     gh_token = check_gh_token()
     gh_user = check_gh_user(gh_token)
 
-    if args.subcommand == 'update':
-        if (args.device):
+    if args.subcommand == "update":
+        if args.device:
             projects = get_projects_from_devices(args.device, args.branch)
         else:
             projects = get_projects_from_manifests(args.project_file, args.branch)
         for project in projects:
             name = project["name"]
-            if ("LeafOS-Project" in name) or ("LeafOS-Blobs" in name) or ("LeafOS-Devices" in name):
+            if (
+                ("LeafOS-Project" in name)
+                or ("LeafOS-Blobs" in name)
+                or ("LeafOS-Devices" in name)
+            ):
                 print(name)
                 org, repo = name.split("/")
                 branch = project["revision"]
@@ -194,17 +246,21 @@ def main():
                 create_gerrit_project(name, branch, gh_user)
                 if not args.no_default_branch:
                     set_gerrit_project_head(name, branch, gh_user)
-    elif args.subcommand == 'update_groups':
+    elif args.subcommand == "update_groups":
         projects = get_projects_from_gerrit_structure()
         live_projects = get_projects_from_gerrit()
         changes = {}
 
         for parent, children in projects.items():
             if parent in live_projects:
-                if (not projects[parent] or set(live_projects[parent]) == set(projects[parent])):
+                if not projects[parent] or set(live_projects[parent]) == set(
+                    projects[parent]
+                ):
                     continue
                 else:
-                    changes[parent] = list(set(projects[parent]) - set(live_projects[parent]))
+                    changes[parent] = list(
+                        set(projects[parent]) - set(live_projects[parent])
+                    )
                     if not changes[parent]:
                         del changes[parent]
             else:
@@ -213,9 +269,9 @@ def main():
         if changes:
             for parent, children in changes.items():
                 for child in children:
-                   print(f"Update parent of {child} to {parent}")
-                   set_gerrit_project_parent(child, parent, gh_user)
-    elif args.subcommand == 'fetch_structure_from_gerrit':
+                    print(f"Update parent of {child} to {parent}")
+                    set_gerrit_project_parent(child, parent, gh_user)
+    elif args.subcommand == "fetch_structure_from_gerrit":
         projects = get_projects_from_gerrit()
 
         for node in sorted(projects.keys()):
@@ -224,6 +280,7 @@ def main():
                 print(f"{node}:")
                 for child in projects[node]:
                     print(f"  - {child}")
+
 
 if __name__ == "__main__":
     main()
