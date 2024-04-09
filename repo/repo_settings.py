@@ -25,6 +25,7 @@ from xml.etree import ElementTree
 
 PORT = "29418"
 GERRIT = "review.leafos.org"
+USER = None
 leaf_devices = "leaf/devices/devices.yaml"
 gerrit_structure = "leaf/gerrit-config/structure.yaml"
 
@@ -59,15 +60,15 @@ def check_gh_token():
     return gh_token
 
 
-def check_gh_user(token):
-    user = requests.get(
+def get_gh_user(token):
+    global USER
+    USER = requests.get(
         "https://api.github.com/user",
         headers={
             "Accept": "application/vnd.github+json",
             "Authorization": f"Bearer {token}",
         },
     ).json()["login"]
-    return user
 
 
 def create_github_repo(org, repo, token):
@@ -101,9 +102,9 @@ def set_github_repo_settings(project, branch, token):
     requests.patch(url, headers=headers, json=data)
 
 
-def create_gerrit_project(project, branch, user):
+def create_gerrit_project(project, branch):
     projects = subprocess.run(
-        ["ssh", "-n", "-p", PORT, f"{user}@{GERRIT}", "gerrit", "ls-projects"],
+        ["ssh", "-n", "-p", PORT, f"{USER}@{GERRIT}", "gerrit", "ls-projects"],
         stdout=subprocess.PIPE,
         text=True,
     ).stdout.split("\n")
@@ -114,7 +115,7 @@ def create_gerrit_project(project, branch, user):
                 "-n",
                 "-p",
                 PORT,
-                f"{user}@{GERRIT}",
+                f"{USER}@{GERRIT}",
                 "gerrit",
                 "create-project",
                 project,
@@ -125,14 +126,14 @@ def create_gerrit_project(project, branch, user):
         )
 
 
-def set_gerrit_project_head(project, branch, user):
+def set_gerrit_project_head(project, branch):
     subprocess.run(
         [
             "ssh",
             "-n",
             "-p",
             PORT,
-            f"{user}@{GERRIT}",
+            f"{USER}@{GERRIT}",
             "gerrit",
             "set-head",
             project,
@@ -143,14 +144,14 @@ def set_gerrit_project_head(project, branch, user):
     )
 
 
-def set_gerrit_project_parent(project, parent, user):
+def set_gerrit_project_parent(project, parent):
     subprocess.run(
         [
             "ssh",
             "-n",
             "-p",
             PORT,
-            f"{user}@{GERRIT}",
+            f"{USER}@{GERRIT}",
             "gerrit",
             "set-project-parent",
             project,
@@ -226,7 +227,7 @@ def main():
     args = parse_args()
 
     gh_token = check_gh_token()
-    gh_user = check_gh_user(gh_token)
+    get_gh_user(gh_token)
 
     if args.subcommand == "update":
         if args.device:
@@ -245,8 +246,8 @@ def main():
                 branch = project["revision"]
                 create_github_repo(org, repo, gh_token)
                 set_github_repo_settings(name, branch, gh_token)
-                create_gerrit_project(name, branch, gh_user)
-                set_gerrit_project_head(name, branch, gh_user)
+                create_gerrit_project(name, branch)
+                set_gerrit_project_head(name, branch)
     elif args.subcommand == "update_groups":
         projects = get_projects_from_gerrit_structure()
         live_projects = get_projects_from_gerrit()
@@ -271,7 +272,7 @@ def main():
             for parent, children in changes.items():
                 for child in children:
                     print(f"Update parent of {child} to {parent}")
-                    set_gerrit_project_parent(child, parent, gh_user)
+                    set_gerrit_project_parent(child, parent)
     elif args.subcommand == "fetch_structure_from_gerrit":
         projects = get_projects_from_gerrit()
 
