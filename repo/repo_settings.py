@@ -163,15 +163,19 @@ def set_gerrit_project_parent(project, parent, user):
 
 def get_projects_from_devices(device, branch):
     projects = []
-
     with open(leaf_devices) as f:
         root = yaml.safe_load(f)
 
     for item in root:
-        if device in item["device"]:
-            for repository in item["repositories"]:
-                projects.append({"name": repository["name"], "revision": branch})
-
+        if "device" in item and "repositories" in item and device in item["device"]:
+            for repo_list in item["repositories"]:
+                if isinstance(repo_list, list):
+                    for repository in repo_list:
+                        projects.append(
+                            {"name": repository["name"], "revision": branch}
+                        )
+                else:
+                    projects.append({"name": repo_list["name"], "revision": branch})
     return projects
 
 
@@ -227,6 +231,8 @@ def main():
     if args.subcommand == "update":
         if args.device:
             projects = get_projects_from_devices(args.device, args.branch)
+            print(json.dumps(projects, indent=4))
+            exit()
         else:
             projects = get_projects_from_manifests(args.project_file, args.branch)
         for project in projects:
