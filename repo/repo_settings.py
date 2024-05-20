@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (C) 2023 LeafOS Project
+# Copyright (C) 2023-2024 The LeafOS Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ def parse_args():
     parser_update.add_argument("-d", "--device")
     parser_update.add_argument("-f", "--project_file",
                         default=".repo/manifests/snippets/leaf.xml")
+    parser_update.add_argument("--no-default-branch", action='store_true')
 
     # update_groups
     parser_update_groups = subparsers.add_parser('update_groups')
@@ -80,7 +81,7 @@ def create_github_repo(org, repo, token):
     }
     requests.post(url, headers=headers, json=data)
 
-def set_github_repo_settings(project, branch, token):
+def set_github_repo_settings(project, branch, token, no_default_branch):
     url = f"https://api.github.com/repos/{project}"
     headers = {
         "Accept": "application/vnd.github+json",
@@ -90,8 +91,9 @@ def set_github_repo_settings(project, branch, token):
         "has_issues": False,
         "has_projects": False,
         "has_wiki": False,
-        "default_branch": branch,
     }
+    if not no_default_branch:
+        data["default_branch"] = branch;
     requests.patch(url, headers=headers, json=data)
 
 def create_gerrit_project(project, branch, user):
@@ -188,9 +190,10 @@ def main():
                 org, repo = name.split("/")
                 branch = project["revision"]
                 create_github_repo(org, repo, gh_token)
-                set_github_repo_settings(name, branch, gh_token)
+                set_github_repo_settings(name, branch, gh_token, args.no_default_branch)
                 create_gerrit_project(name, branch, gh_user)
-                set_gerrit_project_head(name, branch, gh_user)
+                if not args.no_default_branch:
+                    set_gerrit_project_head(name, branch, gh_user)
     elif args.subcommand == 'update_groups':
         projects = get_projects_from_gerrit_structure()
         live_projects = get_projects_from_gerrit()
