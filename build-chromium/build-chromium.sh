@@ -2,8 +2,8 @@
 
 set -e
 
-chromium_version="125.0.6422.165"
-chromium_code="642216500"
+chromium_version="126.0.6478.71"
+chromium_code="647807100"
 clean=0
 gsync=0
 supported_archs=(arm64 x64)
@@ -121,6 +121,7 @@ args+=' enable_nacl=false'
 args+=' blink_symbol_level=0'
 args+=' webview_devui_show_icon=false'
 args+=' dfmify_dev_ui=false'
+args+=' use_login_database_as_backend=true'
 args+=' enable_vr=false'
 args+=' enable_arcore=false'
 args+=' enable_openxr=false'
