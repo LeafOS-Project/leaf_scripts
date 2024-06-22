@@ -42,7 +42,7 @@ def parse_args():
     parser_project.add_argument(
         "-f", "--project_file", default=".repo/manifests/snippets/leaf.xml"
     )
-    parser_update.add_argument("--no-default-branch", action="store_true")
+    parser_project.add_argument("--no-default-branch", action="store_true")
 
     # create branch
     parser_branch = subparsers.add_parser("create_branch")
