@@ -129,8 +129,14 @@ for PROJECTPATH in ${PROJECTPATHS}; do
 
                 for STRING in $STRINGS_TO_FIND; do
                     LINE=$(GIT_PAGER="cat" git show "$REF":"$TRANSLATION" | grep -Pzo "    <(string|plurals) name=\"$STRING\">[\s\S]*?</(string|plurals)>" | sed 's/\x0$/\n/g')
+                    EXISTING_LINE=$(grep -Pzo "    <(string|plurals) name=\"$STRING\">[\s\S]*?</(string|plurals)>" "$FILENAME" | sed 's/\x0$/\n/g')
 
                     if [ ! -z "$LINE" ]; then
+                        if [ ! -z "$EXISTING_LINE" ]; then
+                            echo "WARNING: Skipping duplicate string $STRING"
+                            continue;
+                        fi
+
                         echo "$LINE" >> "$FILENAME"
                     fi
                 done
