@@ -1,0 +1,39 @@
+From 872b2eadf7d663c78cc3f8701331bb08a5e5d0a1 Mon Sep 17 00:00:00 2001
+From: Tim Zimmermann <tim@linux4.de>
+Date: Thu, 15 Aug 2024 05:57:46 +0200
+Subject: [PATCH 1/2] Use leafos.org when verifying DNS-over-HTTPS availability
+
+---
+ chrome/browser/net/dns_probe_runner.cc | 2 +-
+ net/dns/dns_transaction.h              | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/chrome/browser/net/dns_probe_runner.cc b/chrome/browser/net/dns_probe_runner.cc
+index 0da94786a7617..bd34ab27c64bd 100644
+--- a/chrome/browser/net/dns_probe_runner.cc
++++ b/chrome/browser/net/dns_probe_runner.cc
+@@ -18,7 +18,7 @@
+ 
+ namespace chrome_browser_net {
+ 
+-const char DnsProbeRunner::kKnownGoodHostname[] = "google.com";
++const char DnsProbeRunner::kKnownGoodHostname[] = "leafos.org";
+ 
+ namespace {
+ 
+diff --git a/net/dns/dns_transaction.h b/net/dns/dns_transaction.h
+index 8c741c292ff3f..774afc50ea6b1 100644
+--- a/net/dns/dns_transaction.h
++++ b/net/dns/dns_transaction.h
+@@ -29,7 +29,7 @@ class NetLogWithSource;
+ class ResolveContext;
+ 
+ // The hostname probed by CreateDohProbeRunner().
+-inline constexpr std::string_view kDohProbeHostname = "www.gstatic.com";
++inline constexpr std::string_view kDohProbeHostname = "leafos.org";
+ 
+ // DnsTransaction implements a stub DNS resolver as defined in RFC 1034.
+ // The DnsTransaction takes care of retransmissions, name server fallback (or
+-- 
+2.43.0
+
