@@ -2,8 +2,8 @@
 
 set -e
 
-chromium_version="126.0.6478.71"
-chromium_code="647807100"
+chromium_version="128.0.6613.88"
+chromium_code="661308800"
 clean=0
 gsync=0
 supported_archs=(arm64 x64)
@@ -96,6 +96,7 @@ cd src
 # Apply our patches
 if [ $gsync -eq 1 ]; then
     git am $(realpath $(dirname $0))/patches/*.patch
+    git am $(realpath $(dirname $0))/leaf_patches/*.patch
 fi
 
 # Replace webview icon

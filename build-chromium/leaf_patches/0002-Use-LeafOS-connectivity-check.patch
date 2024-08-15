@@ -1,0 +1,105 @@
+From 8d1c30bf7b78a01fd21a039b8d4a59cb08defd09 Mon Sep 17 00:00:00 2001
+From: Tim Zimmermann <tim@linux4.de>
+Date: Thu, 15 Aug 2024 06:05:35 +0200
+Subject: [PATCH 2/2] Use LeafOS connectivity check
+
+---
+ .../chromium/chrome/browser/feedback/ConnectivityChecker.java | 4 ++--
+ .../net/connectivitydetector/ConnectivityDetector.java        | 4 ++--
+ chromecast/net/connectivity_checker_impl.h                    | 4 ++--
+ components/captive_portal/core/captive_portal_detector.cc     | 2 +-
+ components/safety_check/url_constants.cc                      | 2 +-
+ .../security_interstitials/CaptivePortalHelper.java           | 2 +-
+ 6 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/chrome/android/java/src/org/chromium/chrome/browser/feedback/ConnectivityChecker.java b/chrome/android/java/src/org/chromium/chrome/browser/feedback/ConnectivityChecker.java
+index 4b1cdb6ebbe3b..c9751f14bc35d 100644
+--- a/chrome/android/java/src/org/chromium/chrome/browser/feedback/ConnectivityChecker.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/feedback/ConnectivityChecker.java
+@@ -33,9 +33,9 @@ public final class ConnectivityChecker {
+     private static final String TAG = "feedback";
+ 
+     private static final String DEFAULT_HTTP_NO_CONTENT_URL =
+-            "http://clients4.google.com/generate_204";
++            "http://connectivitycheck.leafos.org/generate_204";
+     private static final String DEFAULT_HTTPS_NO_CONTENT_URL =
+-            "https://clients4.google.com/generate_204";
++            "https://connectivitycheck.leafos.org/generate_204";
+ 
+     private static String sHttpNoContentUrl = DEFAULT_HTTP_NO_CONTENT_URL;
+     private static String sHttpsNoContentUrl = DEFAULT_HTTPS_NO_CONTENT_URL;
+diff --git a/chrome/android/java/src/org/chromium/chrome/browser/net/connectivitydetector/ConnectivityDetector.java b/chrome/android/java/src/org/chromium/chrome/browser/net/connectivitydetector/ConnectivityDetector.java
+index 52f29c1807410..60ac13de80dde 100644
+--- a/chrome/android/java/src/org/chromium/chrome/browser/net/connectivitydetector/ConnectivityDetector.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/net/connectivitydetector/ConnectivityDetector.java
+@@ -190,9 +190,9 @@ public class ConnectivityDetector implements NetworkChangeNotifier.ConnectionTyp
+ 
+     private static final String USER_AGENT_HEADER_NAME = "User-Agent";
+     // Send the HTTPS probe first since the captive portals cannot see the encrypted URL path.
+-    private static final String DEFAULT_PROBE_URL = "https://www.google.com/generate_204";
++    private static final String DEFAULT_PROBE_URL = "https://connectivitycheck.leafos.org/generate_204";
+     private static final String FALLBACK_PROBE_URL =
+-            "http://connectivitycheck.gstatic.com/generate_204";
++            "http://connectivitycheck.leafos.org/generate_204";
+     private static final String PROBE_METHOD = "GET";
+     private static final int SOCKET_TIMEOUT_MS = 5000;
+     private static final int CONNECTIVITY_CHECK_INITIAL_DELAY_MS = 5000;
+diff --git a/chromecast/net/connectivity_checker_impl.h b/chromecast/net/connectivity_checker_impl.h
+index ae1673ae33d56..dc5918c28af47 100644
+--- a/chromecast/net/connectivity_checker_impl.h
++++ b/chromecast/net/connectivity_checker_impl.h
+@@ -35,11 +35,11 @@ namespace chromecast {
+ 
+ // Default (HTTPS) url for connectivity checking.
+ constexpr char kDefaultConnectivityCheckUrl[] =
+-    "https://connectivitycheck.gstatic.com/generate_204";
++    "https://connectivitycheck.leafos.org/generate_204";
+ 
+ // HTTP url for connectivity checking.
+ constexpr char kHttpConnectivityCheckUrl[] =
+-    "http://connectivitycheck.gstatic.com/generate_204";
++    "http://connectivitycheck.leafos.org/generate_204";
+ 
+ // The default URLs above are expected to respond with HTTP 204 (no content).
+ constexpr net::HttpStatusCode kConnectivitySuccessStatusCode =
+diff --git a/components/captive_portal/core/captive_portal_detector.cc b/components/captive_portal/core/captive_portal_detector.cc
+index fca21941ffb2d..c786f3046eb96 100644
+--- a/components/captive_portal/core/captive_portal_detector.cc
++++ b/components/captive_portal/core/captive_portal_detector.cc
+@@ -19,7 +19,7 @@
+ namespace captive_portal {
+ 
+ const char CaptivePortalDetector::kDefaultURL[] =
+-    "http://www.gstatic.com/generate_204";
++    "http://connectivitycheck.leafos.org/generate_204";
+ 
+ CaptivePortalDetector::CaptivePortalDetector(
+     network::mojom::URLLoaderFactory* loader_factory)
+diff --git a/components/safety_check/url_constants.cc b/components/safety_check/url_constants.cc
+index c69d84b7d3368..d2fa65d74c818 100644
+--- a/components/safety_check/url_constants.cc
++++ b/components/safety_check/url_constants.cc
+@@ -7,6 +7,6 @@
+ namespace safety_check {
+ 
+ const char kConnectivityCheckUrl[] =
+-    "https://connectivitycheck.gstatic.com/generate_204";
++    "https://connectivitycheck.leafos.org/generate_204";
+ 
+ }  // namespace safety_check
+diff --git a/components/security_interstitials/content/android/java/src/org/chromium/components/security_interstitials/CaptivePortalHelper.java b/components/security_interstitials/content/android/java/src/org/chromium/components/security_interstitials/CaptivePortalHelper.java
+index 43041cb21f342..3f6065edded5f 100644
+--- a/components/security_interstitials/content/android/java/src/org/chromium/components/security_interstitials/CaptivePortalHelper.java
++++ b/components/security_interstitials/content/android/java/src/org/chromium/components/security_interstitials/CaptivePortalHelper.java
+@@ -21,7 +21,7 @@ import java.lang.reflect.Method;
+ @JNINamespace("security_interstitials")
+ public class CaptivePortalHelper {
+     private static final String DEFAULT_PORTAL_CHECK_URL =
+-            "http://connectivitycheck.gstatic.com/generate_204";
++            "http://connectivitycheck.leafos.org/generate_204";
+ 
+     public static void setCaptivePortalCertificateForTesting(String spkiHash) {
+         CaptivePortalHelperJni.get().setCaptivePortalCertificateForTesting(spkiHash);
+-- 
+2.43.0
+
